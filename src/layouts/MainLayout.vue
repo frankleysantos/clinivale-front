@@ -1,6 +1,7 @@
 <template>
   <q-layout view="lHh Lpr lFf">
-    <q-header elevated>
+    <!-- Header -->
+    <q-header elevated class="bg-primary text-white">
       <q-toolbar>
         <q-btn
           flat
@@ -11,24 +12,145 @@
           @click="toggleLeftDrawer"
         />
 
-        <q-toolbar-title> Quasar App </q-toolbar-title>
+        <q-toolbar-title class="row items-center gap-2">
+          <q-icon name="local_pharmacy" size="28px" class="q-mr-sm" />
+          <span class="text-weight-bold">Minha Saúde</span>
+        </q-toolbar-title>
 
-        <div>Quasar v{{ $q.version }}</div>
+        <q-space />
+
+        <!-- Informações do cliente logado -->
+        <div class="row items-center q-gutter-sm q-mr-md gt-xs">
+          <q-icon name="business" size="18px" />
+          <span class="text-caption">{{ clientName }}</span>
+        </div>
+
+        <!-- Menu do usuário -->
+        <q-btn flat dense round icon="account_circle">
+          <q-tooltip>{{ userName }}</q-tooltip>
+          <q-menu anchor="bottom right" self="top right">
+            <q-list style="min-width: 180px">
+              <q-item>
+                <q-item-section avatar>
+                  <q-icon name="person" color="primary" />
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label>{{ userName }}</q-item-label>
+                  <q-item-label caption>{{ clientName }}</q-item-label>
+                </q-item-section>
+              </q-item>
+              <q-separator />
+              <q-item clickable v-close-popup @click="handleLogout">
+                <q-item-section avatar>
+                  <q-icon name="logout" color="negative" />
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label class="text-negative">Sair</q-item-label>
+                </q-item-section>
+              </q-item>
+            </q-list>
+          </q-menu>
+        </q-btn>
       </q-toolbar>
     </q-header>
 
-    <q-drawer v-model="leftDrawerOpen" show-if-above bordered>
-      <q-list>
-        <q-item-label header> Essential Links </q-item-label>
+    <!-- Sidebar -->
+    <q-drawer
+      v-model="leftDrawerOpen"
+      show-if-above
+      bordered
+      :width="240"
+      :breakpoint="700"
+      class="bg-grey-1"
+    >
+      <q-scroll-area class="fit">
+        <!-- Logo / Cabeçalho do drawer -->
+        <div class="q-pa-md row items-center bg-primary text-white">
+          <q-icon name="local_pharmacy" size="32px" class="q-mr-sm" />
+          <div>
+            <div class="text-weight-bold text-subtitle1">Minha Saúde</div>
+            <div class="text-caption opacity-80">Sistema Farmacêutico</div>
+          </div>
+        </div>
 
-        <EssentialLink
-          v-for="link in linksList"
-          :key="link.label"
-          v-bind="link"
-        />
-      </q-list>
+        <q-list padding>
+          <!-- Dashboard -->
+          <q-item
+            clickable
+            v-ripple
+            :to="{ name: 'dashboard' }"
+            active-class="bg-primary text-white"
+            exact
+          >
+            <q-item-section avatar>
+              <q-icon name="dashboard" />
+            </q-item-section>
+            <q-item-section>Dashboard</q-item-section>
+          </q-item>
+
+          <q-separator class="q-my-sm" />
+          <q-item-label header class="text-grey-6 text-caption text-uppercase">
+            Cadastros
+          </q-item-label>
+
+          <!-- Pacientes -->
+          <q-item
+            clickable
+            v-ripple
+            :to="{ name: 'patients' }"
+            active-class="bg-primary text-white"
+          >
+            <q-item-section avatar>
+              <q-icon name="people" />
+            </q-item-section>
+            <q-item-section>Pacientes</q-item-section>
+          </q-item>
+
+          <!-- Clientes -->
+          <q-item
+            clickable
+            v-ripple
+            :to="{ name: 'clients' }"
+            active-class="bg-primary text-white"
+          >
+            <q-item-section avatar>
+              <q-icon name="business" />
+            </q-item-section>
+            <q-item-section>Clientes</q-item-section>
+          </q-item>
+
+          <q-separator class="q-my-sm" />
+          <q-item-label header class="text-grey-6 text-caption text-uppercase">
+            Administração
+          </q-item-label>
+
+          <!-- Usuários -->
+          <q-item
+            clickable
+            v-ripple
+            :to="{ name: 'users' }"
+            active-class="bg-primary text-white"
+          >
+            <q-item-section avatar>
+              <q-icon name="manage_accounts" />
+            </q-item-section>
+            <q-item-section>Usuários</q-item-section>
+          </q-item>
+
+          <q-separator class="q-my-sm" />
+
+          <!-- Sair -->
+          <q-item clickable v-ripple @click="handleLogout" class="text-negative">
+            <q-item-section avatar>
+              <q-icon name="logout" color="negative" />
+            </q-item-section>
+            <q-item-section>Sair</q-item-section>
+          </q-item>
+        </q-list>
+      </q-scroll-area>
     </q-drawer>
 
+    <!-- Conteúdo principal -->
     <q-page-container>
       <router-view />
     </q-page-container>
@@ -36,59 +158,32 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
-import EssentialLink, {
-  type EssentialLinkProps
-} from "@/components/EssentialLink.vue";
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { useQuasar } from 'quasar';
+import { useAuthStore } from 'src/stores/auth';
+import { storeToRefs } from 'pinia';
 
-const linksList: EssentialLinkProps[] = [
-  {
-    label: "Docs",
-    caption: "quasar.dev",
-    icon: "school",
-    link: "https://quasar.dev"
-  },
-  {
-    label: "GitHub",
-    caption: "github.com/quasarframework",
-    icon: "code",
-    link: "https://github.com/quasarframework"
-  },
-  {
-    label: "Discord Chat Channel",
-    caption: "chat.quasar.dev",
-    icon: "chat",
-    link: "https://chat.quasar.dev"
-  },
-  {
-    label: "Forum",
-    caption: "forum.quasar.dev",
-    icon: "record_voice_over",
-    link: "https://forum.quasar.dev"
-  },
-  {
-    label: "Twitter",
-    caption: "@quasarframework",
-    icon: "rss_feed",
-    link: "https://twitter.quasar.dev"
-  },
-  {
-    label: "Facebook",
-    caption: "@QuasarFramework",
-    icon: "public",
-    link: "https://facebook.quasar.dev"
-  },
-  {
-    label: "Quasar Awesome",
-    caption: "Community Quasar projects",
-    icon: "favorite",
-    link: "https://awesome.quasar.dev"
-  }
-];
+const $q = useQuasar();
+const router = useRouter();
+const authStore = useAuthStore();
+const { userName, clientName } = storeToRefs(authStore);
 
 const leftDrawerOpen = ref(false);
 
 function toggleLeftDrawer() {
   leftDrawerOpen.value = !leftDrawerOpen.value;
+}
+
+function handleLogout() {
+  $q.dialog({
+    title: 'Sair do sistema',
+    message: 'Deseja realmente sair?',
+    cancel: true,
+    persistent: true,
+  }).onOk(() => {
+    authStore.logout();
+    void router.push({ name: 'login' });
+  });
 }
 </script>
