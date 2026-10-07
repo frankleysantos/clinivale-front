@@ -2,14 +2,17 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { api } from 'src/boot/api';
 
+export interface Client {
+  id: number;
+  name: string;
+}
+
 export interface User {
   id: number;
   name: string;
   email: string;
-  client: {
-    id: number;
-    name: string;
-  };
+  client?: Client;
+  clients?: Client[];
   roles: Array<{
     id: number;
     name: string;
@@ -17,9 +20,11 @@ export interface User {
   }>;
 }
 
-export interface AuthState {
-  user: User | null;
-  access_token: string | null;
+export interface AuthResponse {
+  user?: User | null;
+  access_token?: string | null;
+  requires_client_selection?: boolean;
+  clients?: Client[];
 }
 
 export const useAuthStore = defineStore('auth', () => {
@@ -34,25 +39,34 @@ export const useAuthStore = defineStore('auth', () => {
   const userName = computed(() => user.value?.name ?? '');
   const clientName = computed(() => user.value?.client?.name ?? '');
 
-  async function login(email: string, password: string) {
-    const { data } = await api.post<AuthState>('/auth/login', {
+  async function login(email: string, password: string, clientId?: number) {
+    const { data } = await api.post<AuthResponse>('/auth/login', {
       email,
       password,
+      ...(clientId ? { client_id: clientId } : {}),
     });
 
-    access_token.value = data.access_token;
-    user.value = data.user as User;
+    if (data.requires_client_selection) {
+      return data;
+    }
 
-    localStorage.setItem('access_token', data.access_token ?? '');
-    localStorage.setItem('user', JSON.stringify(data.user));
+    if (data.access_token && data.user) {
+      access_token.value = data.access_token;
+      user.value = data.user as User;
+
+      localStorage.setItem('access_token', data.access_token ?? '');
+      localStorage.setItem('user', JSON.stringify(data.user));
+    }
 
     return data;
   }
 
   async function fetchMe() {
-    const { data } = await api.get<AuthState>('/auth/me');
-    user.value = data.user as User;
-    localStorage.setItem('user', JSON.stringify(data.user));
+    const { data } = await api.get<AuthResponse>('/auth/me');
+    if (data.user) {
+      user.value = data.user as User;
+      localStorage.setItem('user', JSON.stringify(data.user));
+    }
     return data;
   }
 
@@ -74,3 +88,4 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
   };
 });
+
