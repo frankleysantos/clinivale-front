@@ -38,6 +38,10 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = computed(() => !!access_token.value);
   const userName = computed(() => user.value?.name ?? '');
   const clientName = computed(() => user.value?.client?.name ?? '');
+  const userClients = computed(() => user.value?.clients ?? []);
+  const roleNames = computed(
+    () => user.value?.roles?.map((r) => r.name).join(', ') ?? '',
+  );
 
   async function login(email: string, password: string, clientId?: number) {
     const { data } = await api.post<AuthResponse>('/auth/login', {
@@ -49,6 +53,22 @@ export const useAuthStore = defineStore('auth', () => {
     if (data.requires_client_selection) {
       return data;
     }
+
+    if (data.access_token && data.user) {
+      access_token.value = data.access_token;
+      user.value = data.user as User;
+
+      localStorage.setItem('access_token', data.access_token ?? '');
+      localStorage.setItem('user', JSON.stringify(data.user));
+    }
+
+    return data;
+  }
+
+  async function switchClient(clientId: number) {
+    const { data } = await api.post<AuthResponse>('/auth/switch-client', {
+      client_id: clientId,
+    });
 
     if (data.access_token && data.user) {
       access_token.value = data.access_token;
@@ -83,7 +103,10 @@ export const useAuthStore = defineStore('auth', () => {
     isAuthenticated,
     userName,
     clientName,
+    userClients,
+    roleNames,
     login,
+    switchClient,
     fetchMe,
     logout,
   };

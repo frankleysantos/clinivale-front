@@ -22,17 +22,15 @@ export default defineRouter((/* { store, ssrContext } */) => {
   });
 
   // Navigation guard — protege rotas que requerem autenticação
-  Router.beforeEach((to, _from, next) => {
+  Router.beforeEach((to) => {
     const token = localStorage.getItem('access_token');
-    const isPublic = to.meta['public'] === true;
     const requiresAuth = to.matched.some((r) => r.meta['requiresAuth']);
 
     if (requiresAuth && !token) {
-      next({ name: 'login' });
-    } else if (to.name === 'login' && token) {
-      next({ name: 'dashboard' });
-    } else {
-      next();
+      return { name: 'login' };
+    }
+    if (to.name === 'login' && token) {
+      return { name: 'dashboard' };
     }
   });
 

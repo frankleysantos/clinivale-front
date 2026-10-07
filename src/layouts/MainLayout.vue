@@ -19,8 +19,44 @@
 
         <q-space />
 
-        <!-- Informações do cliente logado -->
-        <div class="row items-center q-gutter-sm q-mr-md gt-xs">
+        <!-- Seleção / Informações da clínica ativa -->
+        <q-btn-dropdown
+          v-if="userClients.length > 0"
+          flat
+          dense
+          no-caps
+          icon="business"
+          :label="clientName || 'Selecionar Clínica'"
+          class="q-mr-sm"
+        >
+          <q-list style="min-width: 220px">
+            <q-item-label header class="text-caption text-weight-bold text-uppercase">
+              Trocar Clínica
+            </q-item-label>
+            <q-item
+              v-for="c in userClients"
+              :key="c.id"
+              clickable
+              v-close-popup
+              :active="Number(c.id) === Number(authStore.user?.client?.id)"
+              active-class="bg-blue-1 text-primary text-weight-bold"
+              @click="handleSwitchClient(c)"
+            >
+              <q-item-section avatar style="min-width: 32px">
+                <q-icon
+                  :name="Number(c.id) === Number(authStore.user?.client?.id) ? 'check_circle' : 'storefront'"
+                  :color="Number(c.id) === Number(authStore.user?.client?.id) ? 'primary' : 'grey-7'"
+                  size="20px"
+                />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>{{ c.name }}</q-item-label>
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-btn-dropdown>
+
+        <div v-else class="row items-center q-gutter-sm q-mr-md gt-xs">
           <q-icon name="business" size="18px" />
           <span class="text-caption">{{ clientName }}</span>
         </div>
@@ -29,16 +65,44 @@
         <q-btn flat dense round icon="account_circle">
           <q-tooltip>{{ userName }}</q-tooltip>
           <q-menu anchor="bottom right" self="top right">
-            <q-list style="min-width: 180px">
+            <q-list style="min-width: 220px">
               <q-item>
                 <q-item-section avatar>
                   <q-icon name="person" color="primary" />
                 </q-item-section>
                 <q-item-section>
-                  <q-item-label>{{ userName }}</q-item-label>
-                  <q-item-label caption>{{ clientName }}</q-item-label>
+                  <q-item-label class="text-weight-medium">{{ userName }}</q-item-label>
+                  <q-item-label caption>{{ roleNames || clientName }}</q-item-label>
                 </q-item-section>
               </q-item>
+
+              <template v-if="userClients.length > 1">
+                <q-separator />
+                <q-item-label header class="text-caption text-weight-bold text-uppercase">
+                  Minhas Clínicas
+                </q-item-label>
+                <q-item
+                  v-for="c in userClients"
+                  :key="'menu-' + c.id"
+                  clickable
+                  v-close-popup
+                  :active="Number(c.id) === Number(authStore.user?.client?.id)"
+                  active-class="bg-blue-1 text-primary text-weight-bold"
+                  @click="handleSwitchClient(c)"
+                >
+                  <q-item-section avatar style="min-width: 32px">
+                    <q-icon
+                      :name="Number(c.id) === Number(authStore.user?.client?.id) ? 'check_circle' : 'storefront'"
+                      :color="Number(c.id) === Number(authStore.user?.client?.id) ? 'primary' : 'grey-7'"
+                      size="20px"
+                    />
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label>{{ c.name }}</q-item-label>
+                  </q-item-section>
+                </q-item>
+              </template>
+
               <q-separator />
               <q-item clickable v-close-popup @click="handleLogout">
                 <q-item-section avatar>
@@ -158,21 +222,57 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
-import { useAuthStore } from 'src/stores/auth';
+import { useAuthStore, type Client } from 'src/stores/auth';
 import { storeToRefs } from 'pinia';
 
 const $q = useQuasar();
 const router = useRouter();
 const authStore = useAuthStore();
-const { userName, clientName } = storeToRefs(authStore);
+const { userName, clientName, userClients, roleNames } = storeToRefs(authStore);
 
 const leftDrawerOpen = ref(false);
 
+onMounted(async () => {
+  try {
+    await authStore.fetchMe();
+  } catch (err) {
+    console.error('Erro ao atualizar dados do usuário logado:', err);
+  }
+});
+
 function toggleLeftDrawer() {
   leftDrawerOpen.value = !leftDrawerOpen.value;
+}
+
+async function handleSwitchClient(client: Client) {
+  const currentClientId = authStore.user?.client?.id;
+  if (currentClientId && Number(client.id) === Number(currentClientId)) {
+    return;
+  }
+  
+  try {
+    $q.loading?.show({ message: `Alternando para ${client.name}...` });
+    await authStore.switchClient(Number(client.id));
+    $q.notify({
+      type: 'positive',
+      message: `Clínica alterada para ${client.name}`,
+      icon: 'check',
+      position: 'top',
+    });
+    window.location.reload();
+  } catch (error: any) {
+    const msg = error?.response?.data?.message || 'Erro ao alternar de clínica';
+    $q.notify({
+      type: 'negative',
+      message: msg,
+      position: 'top',
+    });
+  } finally {
+    $q.loading?.hide();
+  }
 }
 
 function handleLogout() {
