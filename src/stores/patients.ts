@@ -19,7 +19,7 @@ export interface Patient {
 }
 
 export interface CreatePatientDto {
-  client_id: number;
+  client_id?: number;
   name: string;
   cpf: string;
   birthDate: string;

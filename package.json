@@ -46,5 +46,9 @@
   "engines": {
     "node": ">= 26 || ^24 || ^22.12"
   },
-  "productName": "Quasar App"
+  "productName": "Quasar App",
+  "allowScripts": {
+    "esbuild@0.25.12": true,
+    "@parcel/watcher@2.6.0": true
+  }
 }

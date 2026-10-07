@@ -225,9 +225,7 @@ onMounted(async () => {
 async function onSubmit() {
   loading.value = true;
   try {
-    const clientId = authStore.user?.client?.id ?? 0;
     const payload = {
-      client_id: clientId,
       name: form.name,
       cpf: form.cpf.replace(/\D/g, ''),
       birthDate: parseDateToISO(form.birthDate),
