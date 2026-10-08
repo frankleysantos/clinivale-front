@@ -6,6 +6,7 @@
         <div class="text-caption text-grey-6">Gerencie os usuários do sistema</div>
       </div>
       <q-btn
+        v-if="authStore.hasPermission('UserController', 'create')"
         unelevated
         color="primary"
         icon="person_add"
@@ -51,10 +52,26 @@
         <!-- Ações -->
         <template #body-cell-actions="props">
           <q-td :props="props" class="text-right">
-            <q-btn flat dense round icon="edit" color="primary" @click="openDialog(props.row)">
+            <q-btn
+              v-if="authStore.hasPermission('UserController', 'update')"
+              flat
+              dense
+              round
+              icon="edit"
+              color="primary"
+              @click="openDialog(props.row)"
+            >
               <q-tooltip>Editar</q-tooltip>
             </q-btn>
-            <q-btn flat dense round icon="delete" color="negative" @click="confirmDelete(props.row)">
+            <q-btn
+              v-if="authStore.hasPermission('UserController', 'remove')"
+              flat
+              dense
+              round
+              icon="delete"
+              color="negative"
+              @click="confirmDelete(props.row)"
+            >
               <q-tooltip>Excluir</q-tooltip>
             </q-btn>
           </q-td>
@@ -142,13 +159,15 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted } from 'vue';
+import { reactive, ref, computed, onMounted } from 'vue';
 import { useQuasar } from 'quasar';
 import { useUsersStore, type UserItem } from 'src/stores/users';
 import { useRolesStore } from 'src/stores/roles';
+import { useAuthStore } from 'src/stores/auth';
 import { storeToRefs } from 'pinia';
 
 const $q = useQuasar();
+const authStore = useAuthStore();
 const usersStore = useUsersStore();
 const rolesStore = useRolesStore();
 const { users, loading } = storeToRefs(usersStore);
@@ -166,14 +185,21 @@ const userForm = reactive({
   role_ids: [] as number[],
 });
 
-const columns = [
-  { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' as const },
-  { name: 'name', label: 'Nome', field: 'name', sortable: true, align: 'left' as const },
-  { name: 'email', label: 'E-mail', field: 'email', align: 'left' as const },
-  { name: 'client', label: 'Estabelecimento', field: 'client', align: 'left' as const },
-  { name: 'roles', label: 'Perfis', field: 'roles', align: 'left' as const },
-  { name: 'actions', label: 'Ações', field: 'actions', align: 'right' as const },
-];
+const columns = computed(() => {
+  const cols = [
+    { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' as const },
+    { name: 'name', label: 'Nome', field: 'name', sortable: true, align: 'left' as const },
+    { name: 'email', label: 'E-mail', field: 'email', align: 'left' as const },
+    { name: 'client', label: 'Estabelecimento', field: 'client', align: 'left' as const },
+    { name: 'roles', label: 'Perfis', field: 'roles', align: 'left' as const },
+  ];
+
+  if (authStore.hasPermission('UserController', 'update') || authStore.hasPermission('UserController', 'remove')) {
+    cols.push({ name: 'actions', label: 'Ações', field: 'actions', align: 'right' as const });
+  }
+
+  return cols;
+});
 
 async function openDialog(user?: UserItem) {
   editingUser.value = user ?? null;

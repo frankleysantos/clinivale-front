@@ -6,6 +6,7 @@
         <div class="text-caption text-grey-6">Crie e gerencie as roles do sistema com suas respectivas regras de acesso</div>
       </div>
       <q-btn
+        v-if="authStore.hasPermission('RolesController', 'createRoles')"
         unelevated
         color="primary"
         icon="add_moderator"
@@ -43,10 +44,26 @@
         <!-- Ações -->
         <template #body-cell-actions="props">
           <q-td :props="props" class="text-right">
-            <q-btn flat dense round icon="edit" color="primary" @click="openDialog(props.row)">
+            <q-btn
+              v-if="authStore.hasPermission('RolesController', 'updateRole')"
+              flat
+              dense
+              round
+              icon="edit"
+              color="primary"
+              @click="openDialog(props.row)"
+            >
               <q-tooltip>Editar Perfil</q-tooltip>
             </q-btn>
-            <q-btn flat dense round icon="delete" color="negative" @click="confirmDelete(props.row)">
+            <q-btn
+              v-if="authStore.hasPermission('RolesController', 'removeRole')"
+              flat
+              dense
+              round
+              icon="delete"
+              color="negative"
+              @click="confirmDelete(props.row)"
+            >
               <q-tooltip>Excluir Perfil</q-tooltip>
             </q-btn>
           </q-td>
@@ -154,12 +171,14 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted } from 'vue';
+import { reactive, ref, computed, onMounted } from 'vue';
 import { useQuasar } from 'quasar';
 import { useRolesStore, type RoleItem, type AvailablePermissionGroup, type PermissionRule } from 'src/stores/roles';
+import { useAuthStore } from 'src/stores/auth';
 import { storeToRefs } from 'pinia';
 
 const $q = useQuasar();
+const authStore = useAuthStore();
 const rolesStore = useRolesStore();
 const { roles, availablePermissions, loading } = storeToRefs(rolesStore);
 
@@ -174,12 +193,19 @@ const roleForm = reactive({
 // Mapa de controle reativo para checkboxes `Controller:Method` => boolean
 const selectedPermissionsMap = reactive<Record<string, boolean>>({});
 
-const columns = [
-  { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' as const },
-  { name: 'name', label: 'Nome do Perfil', field: 'name', sortable: true, align: 'left' as const },
-  { name: 'permissions', label: 'Regras de Permissão', field: 'permissions', align: 'left' as const },
-  { name: 'actions', label: 'Ações', field: 'actions', align: 'right' as const },
-];
+const columns = computed(() => {
+  const cols = [
+    { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' as const },
+    { name: 'name', label: 'Nome do Perfil', field: 'name', sortable: true, align: 'left' as const },
+    { name: 'permissions', label: 'Regras de Permissão', field: 'permissions', align: 'left' as const },
+  ];
+
+  if (authStore.hasPermission('RolesController', 'updateRole') || authStore.hasPermission('RolesController', 'removeRole')) {
+    cols.push({ name: 'actions', label: 'Ações', field: 'actions', align: 'right' as const });
+  }
+
+  return cols;
+});
 
 function formatPermissionsPreview(permissions?: PermissionRule[]): string {
   if (!permissions || permissions.length === 0) return 'Sem regras especificadas';

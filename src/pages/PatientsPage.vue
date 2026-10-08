@@ -6,6 +6,7 @@
         <div class="text-caption text-grey-6">Gerencie os pacientes cadastrados</div>
       </div>
       <q-btn
+        v-if="authStore.hasPermission('PatientController', 'create')"
         unelevated
         color="primary"
         icon="person_add"
@@ -62,6 +63,7 @@
         <template #body-cell-actions="props">
           <q-td :props="props" class="text-right">
             <q-btn
+              v-if="authStore.hasPermission('PatientController', 'update')"
               flat
               dense
               round
@@ -72,6 +74,7 @@
               <q-tooltip>Editar</q-tooltip>
             </q-btn>
             <q-btn
+              v-if="authStore.hasPermission('PatientController', 'remove')"
               flat
               dense
               round
@@ -92,23 +95,32 @@
 import { ref, computed, onMounted } from 'vue';
 import { useQuasar } from 'quasar';
 import { usePatientsStore, type Patient } from 'src/stores/patients';
+import { useAuthStore } from 'src/stores/auth';
 import { storeToRefs } from 'pinia';
 
 const $q = useQuasar();
+const authStore = useAuthStore();
 const patientsStore = usePatientsStore();
 const { patients, loading } = storeToRefs(patientsStore);
 
 const search = ref('');
 
-const columns = [
-  { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' as const },
-  { name: 'name', label: 'Nome', field: 'name', sortable: true, align: 'left' as const },
-  { name: 'cpf', label: 'CPF', field: 'cpf', align: 'left' as const },
-  { name: 'birthDate', label: 'Nascimento', field: 'birthDate', sortable: true, align: 'left' as const },
-  { name: 'cellphone', label: 'Celular', field: 'cellphone', align: 'left' as const },
-  { name: 'city', label: 'Cidade', field: 'city', align: 'left' as const },
-  { name: 'actions', label: 'Ações', field: 'actions', align: 'right' as const },
-];
+const columns = computed(() => {
+  const cols = [
+    { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' as const },
+    { name: 'name', label: 'Nome', field: 'name', sortable: true, align: 'left' as const },
+    { name: 'cpf', label: 'CPF', field: 'cpf', align: 'left' as const },
+    { name: 'birthDate', label: 'Nascimento', field: 'birthDate', sortable: true, align: 'left' as const },
+    { name: 'cellphone', label: 'Celular', field: 'cellphone', align: 'left' as const },
+    { name: 'city', label: 'Cidade', field: 'city', align: 'left' as const },
+  ];
+
+  if (authStore.hasPermission('PatientController', 'update') || authStore.hasPermission('PatientController', 'remove')) {
+    cols.push({ name: 'actions', label: 'Ações', field: 'actions', align: 'right' as const });
+  }
+
+  return cols;
+});
 
 const filteredPatients = computed(() => {
   if (!search.value) return patients.value;

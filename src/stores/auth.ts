@@ -90,6 +90,23 @@ export const useAuthStore = defineStore('auth', () => {
     return data;
   }
 
+  function hasPermission(controllerName: string, methodName?: string): boolean {
+    if (!user.value?.roles?.length) return false;
+
+    const controllerLower = controllerName.toLowerCase();
+    const methodLower = methodName ? methodName.toLowerCase() : null;
+
+    return user.value.roles.some((role) => {
+      if (!role.permissions?.length) return false;
+      return role.permissions.some((p) => {
+        const matchesController = p.controller?.toLowerCase() === controllerLower;
+        if (!matchesController) return false;
+        if (!methodLower) return true;
+        return p.method?.toLowerCase() === methodLower;
+      });
+    });
+  }
+
   function logout() {
     user.value = null;
     access_token.value = null;
@@ -105,10 +122,12 @@ export const useAuthStore = defineStore('auth', () => {
     clientName,
     userClients,
     roleNames,
+    hasPermission,
     login,
     switchClient,
     fetchMe,
     logout,
   };
 });
+
 

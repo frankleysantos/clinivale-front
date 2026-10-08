@@ -152,13 +152,14 @@
             <q-item-section>Dashboard</q-item-section>
           </q-item>
 
-          <q-separator class="q-my-sm" />
-          <q-item-label header class="text-grey-6 text-caption text-uppercase">
+          <q-separator v-if="authStore.hasPermission('PatientController') || authStore.hasPermission('ClientController')" class="q-my-sm" />
+          <q-item-label v-if="authStore.hasPermission('PatientController') || authStore.hasPermission('ClientController')" header class="text-grey-6 text-caption text-uppercase">
             Cadastros
           </q-item-label>
 
           <!-- Pacientes -->
           <q-item
+            v-if="authStore.hasPermission('PatientController')"
             clickable
             v-ripple
             :to="{ name: 'patients' }"
@@ -172,6 +173,7 @@
 
           <!-- Clientes -->
           <q-item
+            v-if="authStore.hasPermission('ClientController')"
             clickable
             v-ripple
             :to="{ name: 'clients' }"
@@ -183,13 +185,14 @@
             <q-item-section>Clientes</q-item-section>
           </q-item>
 
-          <q-separator class="q-my-sm" />
-          <q-item-label header class="text-grey-6 text-caption text-uppercase">
+          <q-separator v-if="authStore.hasPermission('UserController') || authStore.hasPermission('RolesController')" class="q-my-sm" />
+          <q-item-label v-if="authStore.hasPermission('UserController') || authStore.hasPermission('RolesController')" header class="text-grey-6 text-caption text-uppercase">
             Administração
           </q-item-label>
 
           <!-- Usuários -->
           <q-item
+            v-if="authStore.hasPermission('UserController')"
             clickable
             v-ripple
             :to="{ name: 'users' }"
@@ -203,6 +206,7 @@
 
           <!-- Perfis & Permissões -->
           <q-item
+            v-if="authStore.hasPermission('RolesController')"
             clickable
             v-ripple
             :to="{ name: 'roles' }"

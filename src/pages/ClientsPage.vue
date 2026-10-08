@@ -6,6 +6,7 @@
         <div class="text-caption text-grey-6">Gerencie os estabelecimentos/clientes</div>
       </div>
       <q-btn
+        v-if="authStore.hasPermission('ClientController', 'create')"
         unelevated
         color="primary"
         icon="add_business"
@@ -56,10 +57,26 @@
         <!-- Ações -->
         <template #body-cell-actions="props">
           <q-td :props="props" class="text-right">
-            <q-btn flat dense round icon="edit" color="primary" @click="openDialog(props.row)">
+            <q-btn
+              v-if="authStore.hasPermission('ClientController', 'update')"
+              flat
+              dense
+              round
+              icon="edit"
+              color="primary"
+              @click="openDialog(props.row)"
+            >
               <q-tooltip>Editar</q-tooltip>
             </q-btn>
-            <q-btn flat dense round icon="delete" color="negative" @click="confirmDelete(props.row)">
+            <q-btn
+              v-if="authStore.hasPermission('ClientController', 'remove')"
+              flat
+              dense
+              round
+              icon="delete"
+              color="negative"
+              @click="confirmDelete(props.row)"
+            >
               <q-tooltip>Excluir</q-tooltip>
             </q-btn>
           </q-td>
@@ -160,12 +177,14 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted } from 'vue';
+import { reactive, ref, computed, onMounted } from 'vue';
 import { useQuasar } from 'quasar';
 import { useClientsStore, type Client, type CreateClientDto } from 'src/stores/clients';
+import { useAuthStore } from 'src/stores/auth';
 import { storeToRefs } from 'pinia';
 
 const $q = useQuasar();
+const authStore = useAuthStore();
 const clientsStore = useClientsStore();
 const { clients, loading } = storeToRefs(clientsStore);
 
@@ -195,15 +214,22 @@ const clientForm = reactive<CreateClientDto & { cpf?: string; cnpj?: string }>({
   status: 'ATIVO',
 });
 
-const columns = [
-  { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' as const },
-  { name: 'name', label: 'Nome', field: 'name', sortable: true, align: 'left' as const },
-  { name: 'documento', label: 'CPF/CNPJ', field: 'documento', align: 'left' as const },
-  { name: 'type', label: 'Tipo', field: 'type', align: 'left' as const },
-  { name: 'city', label: 'Cidade', field: 'city', align: 'left' as const },
-  { name: 'status', label: 'Status', field: 'status', align: 'left' as const },
-  { name: 'actions', label: 'Ações', field: 'actions', align: 'right' as const },
-];
+const columns = computed(() => {
+  const cols = [
+    { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' as const },
+    { name: 'name', label: 'Nome', field: 'name', sortable: true, align: 'left' as const },
+    { name: 'documento', label: 'CPF/CNPJ', field: 'documento', align: 'left' as const },
+    { name: 'type', label: 'Tipo', field: 'type', align: 'left' as const },
+    { name: 'city', label: 'Cidade', field: 'city', align: 'left' as const },
+    { name: 'status', label: 'Status', field: 'status', align: 'left' as const },
+  ];
+
+  if (authStore.hasPermission('ClientController', 'update') || authStore.hasPermission('ClientController', 'remove')) {
+    cols.push({ name: 'actions', label: 'Ações', field: 'actions', align: 'right' as const });
+  }
+
+  return cols;
+});
 
 function openDialog(client?: Client) {
   editingClient.value = client ?? null;
