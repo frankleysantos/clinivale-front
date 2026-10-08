@@ -57,6 +57,13 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/pages/UsersPage.vue'),
         meta: { requiresAuth: true, title: 'Usuários' },
       },
+      // Perfis / Roles
+      {
+        path: 'roles',
+        name: 'roles',
+        component: () => import('@/pages/RolesPage.vue'),
+        meta: { requiresAuth: true, title: 'Perfis e Permissões' },
+      },
       // Clientes
       {
         path: 'clientes',
@@ -66,6 +73,7 @@ const routes: RouteRecordRaw[] = [
       },
     ],
   },
+
 
   // 404
   {

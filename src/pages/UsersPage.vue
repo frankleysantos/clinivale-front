@@ -64,7 +64,7 @@
 
     <!-- Dialog criar/editar -->
     <q-dialog v-model="dialogOpen" persistent>
-      <q-card style="min-width: 400px">
+      <q-card style="min-width: 450px">
         <q-card-section class="row items-center q-pb-none">
           <div class="text-h6">{{ editingUser ? 'Editar Usuário' : 'Novo Usuário' }}</div>
           <q-space />
@@ -109,6 +109,21 @@
               </template>
             </q-input>
 
+            <q-select
+              v-model="userForm.role_ids"
+              :options="availableRoles"
+              option-value="id"
+              option-label="name"
+              emit-value
+              map-options
+              multiple
+              use-chips
+              outlined
+              dense
+              label="Perfis / Roles *"
+              hint="Selecione os perfis do usuário nesta clínica"
+            />
+
             <div class="row justify-end q-gutter-sm q-mt-md">
               <q-btn flat label="Cancelar" v-close-popup />
               <q-btn
@@ -130,18 +145,26 @@
 import { reactive, ref, onMounted } from 'vue';
 import { useQuasar } from 'quasar';
 import { useUsersStore, type UserItem } from 'src/stores/users';
+import { useRolesStore } from 'src/stores/roles';
 import { storeToRefs } from 'pinia';
 
 const $q = useQuasar();
 const usersStore = useUsersStore();
+const rolesStore = useRolesStore();
 const { users, loading } = storeToRefs(usersStore);
+const { roles: availableRoles } = storeToRefs(rolesStore);
 
 const dialogOpen = ref(false);
 const saving = ref(false);
 const showPwd = ref(false);
 const editingUser = ref<UserItem | null>(null);
 
-const userForm = reactive({ name: '', email: '', password: '' });
+const userForm = reactive({
+  name: '',
+  email: '',
+  password: '',
+  role_ids: [] as number[],
+});
 
 const columns = [
   { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' as const },
@@ -152,12 +175,18 @@ const columns = [
   { name: 'actions', label: 'Ações', field: 'actions', align: 'right' as const },
 ];
 
-function openDialog(user?: UserItem) {
+async function openDialog(user?: UserItem) {
   editingUser.value = user ?? null;
   userForm.name = user?.name ?? '';
   userForm.email = user?.email ?? '';
   userForm.password = '';
+  userForm.role_ids = user?.roles?.map((r) => r.id) || [];
   showPwd.value = false;
+
+  if (availableRoles.value.length === 0) {
+    await rolesStore.fetchAll();
+  }
+
   dialogOpen.value = true;
 }
 
@@ -168,15 +197,22 @@ async function saveUser() {
       await usersStore.update(editingUser.value.id, {
         name: userForm.name,
         email: userForm.email,
+        role_ids: userForm.role_ids,
       });
-      $q.notify({ type: 'positive', message: 'Usuário atualizado.', position: 'top' });
+      $q.notify({ type: 'positive', message: 'Usuário atualizado com sucesso.', position: 'top' });
     } else {
-      await usersStore.create({ ...userForm });
+      await usersStore.create({
+        name: userForm.name,
+        email: userForm.email,
+        password: userForm.password,
+        role_ids: userForm.role_ids,
+      });
       $q.notify({ type: 'positive', message: 'Usuário criado com sucesso.', position: 'top' });
     }
     dialogOpen.value = false;
-  } catch {
-    $q.notify({ type: 'negative', message: 'Erro ao salvar usuário.', position: 'top' });
+  } catch (error: any) {
+    const msg = error?.response?.data?.message || 'Erro ao salvar usuário.';
+    $q.notify({ type: 'negative', message: msg, position: 'top' });
   } finally {
     saving.value = false;
   }
@@ -199,5 +235,11 @@ function confirmDelete(user: UserItem) {
   });
 }
 
-onMounted(() => usersStore.fetchAll());
+onMounted(async () => {
+  await Promise.all([
+    usersStore.fetchAll(),
+    rolesStore.fetchAll(),
+  ]);
+});
 </script>
+

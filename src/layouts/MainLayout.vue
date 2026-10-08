@@ -201,6 +201,20 @@
             <q-item-section>Usuários</q-item-section>
           </q-item>
 
+          <!-- Perfis & Permissões -->
+          <q-item
+            clickable
+            v-ripple
+            :to="{ name: 'roles' }"
+            active-class="bg-primary text-white"
+          >
+            <q-item-section avatar>
+              <q-icon name="admin_panel_settings" />
+            </q-item-section>
+            <q-item-section>Perfis & Permissões</q-item-section>
+          </q-item>
+
+
           <q-separator class="q-my-sm" />
 
           <!-- Sair -->

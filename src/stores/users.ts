@@ -7,13 +7,14 @@ export interface UserItem {
   name: string;
   email: string;
   client: { id: number; name: string };
-  roles: Array<{ id: number; name: string }>;
+  roles: Array<{ id: number; name: string; client_id?: number }>;
 }
 
 export interface CreateUserDto {
   name: string;
   email: string;
-  password: string;
+  password?: string;
+  role_ids?: number[];
 }
 
 export const useUsersStore = defineStore('users', () => {
@@ -55,3 +56,4 @@ export const useUsersStore = defineStore('users', () => {
 
   return { users, loading, fetchAll, fetchOne, create, update, remove };
 });
+
