@@ -649,6 +649,7 @@ async function saveUser() {
     }
 
     if (editingUser.value) {
+      payload.id = editingUser.value.id;
       await usersStore.update(editingUser.value.id, payload);
       $q.notify({ type: 'positive', message: 'Usuário atualizado com sucesso.', position: 'top' });
     } else {
