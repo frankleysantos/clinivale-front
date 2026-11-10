@@ -262,9 +262,10 @@
                         class="col-12 col-sm-6"
                       >
                         <q-checkbox
-                          v-model="selectedPermissionsMap[`${group.controller}:${method.name}`]"
+                          :model-value="!!selectedPermissionsMap[`${group.controller}:${method.name}`]"
                           :label="method.label"
                           dense
+                          @update:model-value="selectedPermissionsMap[`${group.controller}:${method.name}`] = !!$event"
                         />
                       </div>
                     </div>
@@ -375,6 +376,7 @@ async function openDialog(role?: RoleItem) {
     await clientsStore.fetchAll();
   }
 
+  // Limpar mapa e inicializar todas as chaves como false
   Object.keys(selectedPermissionsMap).forEach((key) => {
     delete selectedPermissionsMap[key];
   });
@@ -382,6 +384,13 @@ async function openDialog(role?: RoleItem) {
   if (availablePermissions.value.length === 0) {
     await rolesStore.fetchAvailablePermissions();
   }
+
+  // Inicializa explicitamente como false para todas as permissões disponíveis
+  availablePermissions.value.forEach((group) => {
+    group.methods.forEach((method) => {
+      selectedPermissionsMap[`${group.controller}:${method.name}`] = false;
+    });
+  });
 
   if (role && role.permissions) {
     role.permissions.forEach((p) => {
