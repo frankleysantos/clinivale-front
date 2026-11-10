@@ -15,6 +15,42 @@
       />
     </div>
 
+    <!-- Filtro por Clínica (Disponível para Clínica Mestre) -->
+    <q-card v-if="isMasterClinic" flat bordered class="q-mb-md q-pa-sm">
+      <div class="row items-center q-col-gutter-md">
+        <div class="col-12 col-md-5 col-lg-4">
+          <q-select
+            v-model="selectedFilterClient"
+            :options="filterClientOptions"
+            option-value="id"
+            option-label="name"
+            emit-value
+            map-options
+            outlined
+            dense
+            clearable
+            label="Filtrar por Clínica / Estabelecimento"
+            @update:model-value="onFilterChange"
+          >
+            <template #prepend>
+              <q-icon name="filter_alt" color="primary" />
+            </template>
+          </q-select>
+        </div>
+        <div class="col text-caption text-grey-7">
+          <span v-if="selectedFilterClient === 'all'">
+            Exibindo usuários de <strong>todas as clínicas</strong> cadastradas.
+          </span>
+          <span v-else-if="selectedFilterClient">
+            Exibindo usuários da clínica selecionada.
+          </span>
+          <span v-else>
+            Exibindo usuários da clínica ativa.
+          </span>
+        </div>
+      </div>
+    </q-card>
+
     <!-- Tabela -->
     <q-card flat bordered>
       <q-table
@@ -45,7 +81,10 @@
         <!-- Cliente -->
         <template #body-cell-client="props">
           <q-td :props="props">
-            {{ props.row.client?.name ?? '—' }}
+            <q-badge v-if="props.row.client?.name" color="blue-grey" outline>
+              {{ props.row.client.name }}
+            </q-badge>
+            <span v-else class="text-caption text-grey-6">—</span>
           </q-td>
         </template>
 
@@ -61,7 +100,7 @@
               color="primary"
               @click="openDialog(props.row)"
             >
-              <q-tooltip>Editar</q-tooltip>
+              <q-tooltip>Editar usuário</q-tooltip>
             </q-btn>
             <q-btn
               v-if="authStore.hasPermission('UserController', 'remove')"
@@ -72,18 +111,20 @@
               color="negative"
               @click="confirmDelete(props.row)"
             >
-              <q-tooltip>Excluir</q-tooltip>
+              <q-tooltip>Excluir usuário</q-tooltip>
             </q-btn>
           </q-td>
         </template>
       </q-table>
     </q-card>
 
-    <!-- Dialog criar/editar -->
-    <q-dialog v-model="dialogOpen" persistent>
-      <q-card style="min-width: 450px">
+    <!-- Dialog Criar/Editar Usuário -->
+    <q-dialog v-model="dialogOpen" persistent max-width="600px">
+      <q-card style="min-width: 480px">
         <q-card-section class="row items-center q-pb-none">
-          <div class="text-h6">{{ editingUser ? 'Editar Usuário' : 'Novo Usuário' }}</div>
+          <div class="text-h6 font-weight-bold">
+            {{ editingUser ? 'Editar Usuário' : 'Novo Usuário' }}
+          </div>
           <q-space />
           <q-btn icon="close" flat round dense v-close-popup />
         </q-card-section>
@@ -198,6 +239,15 @@ const isMasterClinic = computed(() => {
   return Number(currentClient?.id) === 1 || currentClient?.name?.toLowerCase() === 'clinivale';
 });
 
+const selectedFilterClient = ref<number | string | null>('all');
+
+const filterClientOptions = computed(() => {
+  return [
+    { id: 'all', name: 'Todas as Clínicas' },
+    ...clients.value.map((c) => ({ id: c.id, name: c.name })),
+  ];
+});
+
 const dialogOpen = ref(false);
 const saving = ref(false);
 const showPwd = ref(false);
@@ -226,6 +276,24 @@ const columns = computed(() => {
 
   return cols;
 });
+
+async function onFilterChange(val: number | string | null) {
+  if (val === 'all') {
+    await usersStore.fetchAll('all');
+  } else if (val) {
+    await usersStore.fetchAll(val);
+  } else {
+    await usersStore.fetchAll();
+  }
+}
+
+async function reloadCurrentUsers() {
+  if (isMasterClinic.value) {
+    await onFilterChange(selectedFilterClient.value);
+  } else {
+    await usersStore.fetchAll();
+  }
+}
 
 async function onClientChange(clientId: number | null) {
   // Limpa as roles selecionadas quando a clínica muda para não manter perfis de outro cliente
@@ -274,6 +342,7 @@ async function saveUser() {
       });
       $q.notify({ type: 'positive', message: 'Usuário criado com sucesso.', position: 'top' });
     }
+    await reloadCurrentUsers();
     dialogOpen.value = false;
   } catch (error: any) {
     const msg = error?.response?.data?.message || 'Erro ao salvar usuário.';
@@ -294,6 +363,7 @@ function confirmDelete(user: UserItem) {
     try {
       await usersStore.remove(user.id);
       $q.notify({ type: 'positive', message: 'Usuário excluído.', position: 'top' });
+      await reloadCurrentUsers();
     } catch {
       $q.notify({ type: 'negative', message: 'Erro ao excluir usuário.', position: 'top' });
     }
@@ -301,10 +371,12 @@ function confirmDelete(user: UserItem) {
 }
 
 onMounted(async () => {
-  await Promise.all([
-    usersStore.fetchAll(),
-    rolesStore.fetchAll(),
-  ]);
+  if (isMasterClinic.value) {
+    await clientsStore.fetchAll();
+    await usersStore.fetchAll('all');
+  } else {
+    await usersStore.fetchAll();
+  }
+  await rolesStore.fetchAll();
 });
 </script>
-

@@ -15,6 +15,42 @@
       />
     </div>
 
+    <!-- Filtro por Clínica (Disponível para Clínica Mestre) -->
+    <q-card v-if="isMasterClinic" flat bordered class="q-mb-md q-pa-sm">
+      <div class="row items-center q-col-gutter-md">
+        <div class="col-12 col-md-5 col-lg-4">
+          <q-select
+            v-model="selectedFilterClient"
+            :options="filterClientOptions"
+            option-value="id"
+            option-label="name"
+            emit-value
+            map-options
+            outlined
+            dense
+            clearable
+            label="Filtrar por Clínica / Estabelecimento"
+            @update:model-value="onFilterChange"
+          >
+            <template #prepend>
+              <q-icon name="filter_alt" color="primary" />
+            </template>
+          </q-select>
+        </div>
+        <div class="col text-caption text-grey-7">
+          <span v-if="selectedFilterClient === 'all'">
+            Exibindo perfis de <strong>todas as clínicas</strong> cadastradas.
+          </span>
+          <span v-else-if="selectedFilterClient">
+            Exibindo perfis da clínica selecionada.
+          </span>
+          <span v-else>
+            Exibindo perfis da clínica ativa.
+          </span>
+        </div>
+      </div>
+    </q-card>
+
     <!-- Tabela de Roles -->
     <q-card flat bordered class="q-mb-md">
       <q-table
@@ -221,6 +257,15 @@ const canCreateRole = computed(() => {
   return authStore.hasPermission('RolesController', 'createRoles');
 });
 
+const selectedFilterClient = ref<number | string | null>('all');
+
+const filterClientOptions = computed(() => {
+  return [
+    { id: 'all', name: 'Todas as Clínicas' },
+    ...clients.value.map((c) => ({ id: c.id, name: c.name })),
+  ];
+});
+
 const dialogOpen = ref(false);
 const saving = ref(false);
 const editingRole = ref<RoleItem | null>(null);
@@ -252,6 +297,16 @@ function formatPermissionsPreview(permissions?: PermissionRule[]): string {
   if (!permissions || permissions.length === 0) return 'Sem regras especificadas';
   const controllers = Array.from(new Set(permissions.map((p) => p.controller)));
   return `Módulos: ${controllers.join(', ')}`;
+}
+
+async function onFilterChange(val: number | string | null) {
+  if (val === 'all') {
+    await rolesStore.fetchAll('all');
+  } else if (val) {
+    await rolesStore.fetchAll(val);
+  } else {
+    await rolesStore.fetchAll();
+  }
 }
 
 async function openDialog(role?: RoleItem) {
@@ -321,6 +376,14 @@ function clearAllPermissions() {
   });
 }
 
+async function reloadCurrentRoles() {
+  if (isMasterClinic.value) {
+    await onFilterChange(selectedFilterClient.value);
+  } else {
+    await rolesStore.fetchAll();
+  }
+}
+
 async function saveRole() {
   // Extrair regras marcadas
   const permissions: PermissionRule[] = [];
@@ -348,7 +411,7 @@ async function saveRole() {
       await rolesStore.create(payload);
       $q.notify({ type: 'positive', message: 'Perfil criado com sucesso.', position: 'top' });
     }
-    await rolesStore.fetchAll();
+    await reloadCurrentRoles();
     dialogOpen.value = false;
   } catch (error: any) {
     const msg = error?.response?.data?.message || 'Erro ao salvar perfil.';
@@ -369,6 +432,7 @@ function confirmDelete(role: RoleItem) {
     try {
       await rolesStore.remove(role.id);
       $q.notify({ type: 'positive', message: 'Perfil excluído.', position: 'top' });
+      await reloadCurrentRoles();
     } catch {
       $q.notify({ type: 'negative', message: 'Erro ao excluir perfil.', position: 'top' });
     }
@@ -376,10 +440,12 @@ function confirmDelete(role: RoleItem) {
 }
 
 onMounted(async () => {
-  await rolesStore.fetchAll();
-  await rolesStore.fetchAvailablePermissions();
   if (isMasterClinic.value) {
     await clientsStore.fetchAll();
+    await rolesStore.fetchAll('all');
+  } else {
+    await rolesStore.fetchAll();
   }
+  await rolesStore.fetchAvailablePermissions();
 });
 </script>

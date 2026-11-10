@@ -22,11 +22,14 @@ export const useUsersStore = defineStore('users', () => {
   const users = ref<UserItem[]>([]);
   const loading = ref(false);
 
-  async function fetchAll() {
+  async function fetchAll(clientId?: number | string) {
     loading.value = true;
     try {
-      const { data } = await api.get<UserItem[]>('/users');
+      const { data } = await api.get<UserItem[]>('/users', {
+        params: clientId !== undefined && clientId !== null && clientId !== '' ? { client_id: clientId } : {},
+      });
       users.value = data;
+      return data;
     } finally {
       loading.value = false;
     }
@@ -55,6 +58,13 @@ export const useUsersStore = defineStore('users', () => {
     users.value = users.value.filter((u) => u.id !== id);
   }
 
-  return { users, loading, fetchAll, fetchOne, create, update, remove };
+  return {
+    users,
+    loading,
+    fetchAll,
+    fetchOne,
+    create,
+    update,
+    remove,
+  };
 });
-

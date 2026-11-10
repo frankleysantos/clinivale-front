@@ -32,11 +32,11 @@ export const useRolesStore = defineStore('roles', () => {
   const availablePermissions = ref<AvailablePermissionGroup[]>([]);
   const loading = ref(false);
 
-  async function fetchAll(clientId?: number) {
+  async function fetchAll(clientId?: number | string) {
     loading.value = true;
     try {
       const { data } = await api.get<RoleItem[]>('/roles', {
-        params: clientId ? { client_id: clientId } : {},
+        params: clientId !== undefined && clientId !== null && clientId !== '' ? { client_id: clientId } : {},
       });
       roles.value = data;
       return data;
