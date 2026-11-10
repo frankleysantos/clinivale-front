@@ -1,22 +1,23 @@
 <template>
-  <q-page padding>
-    <div class="row items-center justify-between q-mb-lg">
+  <q-page padding class="responsive-page">
+    <div class="row items-center justify-between q-mb-md q-mb-sm-lg gap-sm">
       <div>
-        <div class="text-h5 text-weight-bold text-primary">Perfis e Permissões</div>
-        <div class="text-caption text-grey-6">Crie e gerencie as roles do sistema com suas respectivas regras de acesso</div>
+        <div class="text-h5 text-weight-bolder text-dark">Perfis e Permissões</div>
+        <div class="text-caption text-grey-7">Crie e gerencie as roles do sistema com regras de acesso</div>
       </div>
       <q-btn
         v-if="canCreateRole"
         unelevated
         color="primary"
-        icon="add_moderator"
+        icon="add"
         label="Novo Perfil"
+        class="picpay-action-btn lt-sm-full"
         @click="openDialog()"
       />
     </div>
 
     <!-- Filtro por Clínica (Disponível para Clínica Mestre) -->
-    <q-card v-if="isMasterClinic" flat bordered class="q-mb-md q-pa-sm">
+    <q-card v-if="isMasterClinic" flat bordered class="q-mb-md q-pa-sm filter-card">
       <div class="row items-center q-col-gutter-md">
         <div class="col-12 col-md-5 col-lg-4">
           <q-select
@@ -29,7 +30,7 @@
             outlined
             dense
             clearable
-            label="Filtrar por Clínica / Estabelecimento"
+            label="Filtrar por Estabelecimento"
             @update:model-value="onFilterChange"
           >
             <template #prepend>
@@ -37,7 +38,7 @@
             </template>
           </q-select>
         </div>
-        <div class="col text-caption text-grey-7">
+        <div class="col-12 col-md-7 text-caption text-grey-7">
           <span v-if="selectedFilterClient === 'all'">
             Exibindo perfis de <strong>todas as clínicas</strong> cadastradas.
           </span>
@@ -51,33 +52,90 @@
       </div>
     </q-card>
 
-    <!-- Tabela de Roles -->
-    <q-card flat bordered class="q-mb-md">
+    <!-- Tabela Híbrida de Roles: Desktop Tabela / Mobile Cards PicPay -->
+    <q-card flat bordered class="table-card q-mb-md">
       <q-table
         :rows="roles"
         :columns="columns"
         row-key="id"
         :loading="loading"
+        :grid="$q.screen.lt.sm"
         :rows-per-page-options="[10, 20, 50]"
         flat
         no-data-label="Nenhum perfil cadastrado"
         loading-label="Carregando perfis..."
+        class="responsive-table"
       >
-        <!-- Cliente / Clínica -->
+        <!-- Card Mobile PicPay -->
+        <template #item="props">
+          <div class="col-12 q-pa-xs">
+            <q-card flat class="mobile-item-card q-pa-md">
+              <div class="row items-center justify-between no-wrap q-mb-xs">
+                <div class="row items-center no-wrap ellipsis">
+                  <div class="role-avatar q-mr-sm">
+                    <q-icon name="verified_user" size="18px" color="primary" />
+                  </div>
+                  <div class="text-weight-bold text-dark ellipsis text-subtitle2">
+                    {{ props.row.name }}
+                  </div>
+                </div>
+                <div class="row items-center no-wrap q-gutter-xs">
+                  <q-btn
+                    v-if="authStore.hasPermission('RolesController', 'updateRole')"
+                    flat
+                    dense
+                    round
+                    icon="edit"
+                    color="primary"
+                    size="sm"
+                    @click="openDialog(props.row)"
+                  />
+                  <q-btn
+                    v-if="authStore.hasPermission('RolesController', 'removeRole')"
+                    flat
+                    dense
+                    round
+                    icon="delete"
+                    color="negative"
+                    size="sm"
+                    @click="confirmDelete(props.row)"
+                  />
+                </div>
+              </div>
+
+              <div class="row items-center justify-between q-mt-sm">
+                <q-badge v-if="props.row.client?.name" color="grey-3" text-color="dark">
+                  {{ props.row.client.name }}
+                </q-badge>
+                <q-badge v-else color="grey-3" text-color="dark">
+                  Global
+                </q-badge>
+                <q-badge color="primary">
+                  {{ props.row.permissions?.length || 0 }} regras
+                </q-badge>
+              </div>
+
+              <div class="text-caption text-grey-6 q-mt-xs ellipsis">
+                {{ formatPermissionsPreview(props.row.permissions) }}
+              </div>
+            </q-card>
+          </div>
+        </template>
+
+        <!-- Template Desktop -->
         <template #body-cell-client="props">
           <q-td :props="props">
-            <q-badge v-if="props.row.client?.name" color="blue-grey" outline>
+            <q-badge v-if="props.row.client?.name" color="grey-2" text-color="dark" class="text-weight-bold">
               {{ props.row.client.name }}
             </q-badge>
             <span v-else class="text-caption text-grey-6">Global / Padrão</span>
           </q-td>
         </template>
 
-        <!-- Permissões / Regras -->
         <template #body-cell-permissions="props">
           <q-td :props="props">
             <div class="row items-center gap-1">
-              <q-badge color="secondary" class="q-mr-xs">
+              <q-badge color="primary" class="q-mr-xs">
                 {{ props.row.permissions?.length || 0 }} regras
               </q-badge>
               <span class="text-caption text-grey-7">
@@ -87,9 +145,8 @@
           </q-td>
         </template>
 
-        <!-- Ações -->
         <template #body-cell-actions="props">
-          <q-td :props="props" class="text-right">
+          <q-td :props="props" class="text-right no-wrap">
             <q-btn
               v-if="authStore.hasPermission('RolesController', 'updateRole')"
               flat
@@ -117,11 +174,11 @@
       </q-table>
     </q-card>
 
-    <!-- Dialog Criar / Editar Role -->
-    <q-dialog v-model="dialogOpen" persistent max-width="700px" style="width: 700px">
-      <q-card style="width: 100%; max-width: 700px">
+    <!-- Dialog Criar/Editar Role com visual Bottom Sheet no mobile -->
+    <q-dialog v-model="dialogOpen" persistent max-width="700px">
+      <q-card style="width: 100%; max-width: 700px" class="q-pa-xs">
         <q-card-section class="row items-center q-pb-none">
-          <div class="text-h6 text-weight-bold">
+          <div class="text-h6 text-weight-bolder text-dark">
             {{ editingRole ? 'Editar Perfil' : 'Novo Perfil de Acesso' }}
           </div>
           <q-space />
@@ -159,16 +216,16 @@
             <!-- Seção de Permissões -->
             <div class="q-mt-sm">
               <div class="row items-center justify-between q-mb-sm">
-                <span class="text-subtitle2 text-weight-bold text-grey-8">
+                <span class="text-subtitle2 text-weight-bold text-dark">
                   Regras de Acesso por Módulo
                 </span>
                 <div class="q-gutter-xs">
                   <q-btn flat dense size="sm" color="primary" label="Marcar Todas" @click="selectAllPermissions" />
-                  <q-btn flat dense size="sm" color="grey" label="Desmarcar Todas" @click="clearAllPermissions" />
+                  <q-btn flat dense size="sm" color="grey-7" label="Desmarcar Todas" @click="clearAllPermissions" />
                 </div>
               </div>
 
-              <q-list bordered separator class="rounded-borders bg-grey-1">
+              <q-list bordered separator class="rounded-borders bg-grey-1" style="max-height: 50vh; overflow-y: auto">
                 <q-expansion-item
                   v-for="group in availablePermissions"
                   :key="group.controller"
@@ -180,7 +237,7 @@
                       <q-icon name="security" color="primary" size="20px" />
                     </q-item-section>
                     <q-item-section>
-                      <q-item-label>{{ group.label }}</q-item-label>
+                      <q-item-label class="text-weight-bold">{{ group.label }}</q-item-label>
                       <q-item-label caption>
                         {{ getGroupSelectedCount(group.controller) }} de {{ group.methods.length }} selecionadas
                       </q-item-label>
@@ -217,13 +274,14 @@
             </div>
 
             <div class="row justify-end q-gutter-sm q-mt-lg">
-              <q-btn flat label="Cancelar" v-close-popup />
+              <q-btn flat label="Cancelar" color="grey-7" v-close-popup />
               <q-btn
                 unelevated
                 type="submit"
                 :label="editingRole ? 'Salvar Alterações' : 'Criar Perfil'"
                 color="primary"
                 :loading="saving"
+                class="picpay-action-btn"
               />
             </div>
           </q-form>
@@ -275,7 +333,6 @@ const roleForm = reactive({
   client_id: null as number | null,
 });
 
-// Mapa de controle reativo para checkboxes `Controller:Method` => boolean
 const selectedPermissionsMap = reactive<Record<string, boolean>>({});
 
 const columns = computed(() => {
@@ -314,22 +371,18 @@ async function openDialog(role?: RoleItem) {
   roleForm.name = role?.name ?? '';
   roleForm.client_id = role?.client_id ?? role?.client?.id ?? authStore.user?.client?.id ?? null;
 
-  // Carregar lista de clientes se for clínica mestre
   if (isMasterClinic.value && clients.value.length === 0) {
     await clientsStore.fetchAll();
   }
 
-  // Limpar mapa
   Object.keys(selectedPermissionsMap).forEach((key) => {
     delete selectedPermissionsMap[key];
   });
 
-  // Garantir permissões carregadas
   if (availablePermissions.value.length === 0) {
     await rolesStore.fetchAvailablePermissions();
   }
 
-  // Se editando, preencher mapa a partir de role.permissions
   if (role && role.permissions) {
     role.permissions.forEach((p) => {
       selectedPermissionsMap[`${p.controller}:${p.method}`] = true;
@@ -385,7 +438,6 @@ async function reloadCurrentRoles() {
 }
 
 async function saveRole() {
-  // Extrair regras marcadas
   const permissions: PermissionRule[] = [];
   Object.entries(selectedPermissionsMap).forEach(([key, isChecked]) => {
     if (isChecked) {
@@ -449,3 +501,45 @@ onMounted(async () => {
   await rolesStore.fetchAvailablePermissions();
 });
 </script>
+
+<style scoped lang="scss">
+.responsive-page {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.picpay-action-btn {
+  border-radius: 999px;
+  font-weight: 700;
+  padding: 8px 18px;
+}
+
+.mobile-item-card {
+  border-radius: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+  background: #FFFFFF;
+  transition: transform 0.15s ease;
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+.role-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(17, 199, 111, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 600px) {
+  .lt-sm-full {
+    width: 100%;
+    margin-top: 8px;
+  }
+}
+</style>

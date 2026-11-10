@@ -1,67 +1,124 @@
 <template>
-  <q-page padding>
-    <div class="row items-center justify-between q-mb-lg">
+  <q-page padding class="responsive-page">
+    <!-- Header da Página -->
+    <div class="row items-center justify-between q-mb-md q-mb-sm-lg gap-sm">
       <div>
-        <div class="text-h5 text-weight-bold text-primary">Pacientes</div>
-        <div class="text-caption text-grey-6">Gerencie os pacientes cadastrados</div>
+        <div class="text-h5 text-weight-bolder text-dark">Pacientes</div>
+        <div class="text-caption text-grey-7">Gerencie os prontuários e fichas clínicas</div>
       </div>
       <q-btn
         v-if="authStore.hasPermission('PatientController', 'create')"
         unelevated
         color="primary"
-        icon="person_add"
+        icon="add"
         label="Novo Paciente"
+        class="picpay-action-btn lt-sm-full"
         :to="{ name: 'patient-create' }"
       />
     </div>
 
-    <!-- Filtro de busca -->
-    <q-card flat bordered class="q-mb-md">
-      <q-card-section class="q-py-sm">
-        <q-input
-          v-model="search"
-          dense
-          outlined
-          placeholder="Buscar por nome, CPF ou cidade..."
-          clearable
-        >
-          <template #prepend>
-            <q-icon name="search" />
-          </template>
-        </q-input>
-      </q-card-section>
-    </q-card>
+    <!-- Barra de Busca PicPay -->
+    <div class="q-mb-md">
+      <q-input
+        v-model="search"
+        dense
+        outlined
+        placeholder="Buscar por nome, CPF ou cidade..."
+        clearable
+        class="picpay-search-input"
+      >
+        <template #prepend>
+          <q-icon name="search" color="grey-6" />
+        </template>
+      </q-input>
+    </div>
 
-    <!-- Tabela -->
-    <q-card flat bordered>
+    <!-- Tabela Híbrida: Tabela no Desktop / Cards estilo PicPay no Mobile -->
+    <q-card flat bordered class="table-card">
       <q-table
         :rows="filteredPatients"
         :columns="columns"
         row-key="id"
         :loading="loading"
+        :grid="$q.screen.lt.sm"
         :rows-per-page-options="[10, 20, 50]"
         flat
-        bordered
-        no-data-label="Nenhum paciente encontrado"
+        no-data-label="Nenhum paciente cadastrado"
         loading-label="Carregando pacientes..."
+        class="responsive-table"
       >
-        <!-- CPF formatado -->
+        <!-- Layout do Card Mobile estilo PicPay -->
+        <template #item="props">
+          <div class="col-12 q-pa-xs">
+            <q-card flat class="mobile-item-card q-pa-md">
+              <div class="row items-center justify-between no-wrap q-mb-xs">
+                <div class="row items-center no-wrap ellipsis">
+                  <div class="patient-avatar q-mr-sm">
+                    <q-icon name="person" size="18px" color="primary" />
+                  </div>
+                  <div class="text-weight-bold text-dark ellipsis text-subtitle2">
+                    {{ props.row.name }}
+                  </div>
+                </div>
+                <div class="row items-center no-wrap q-gutter-xs">
+                  <q-btn
+                    v-if="authStore.hasPermission('PatientController', 'update')"
+                    flat
+                    dense
+                    round
+                    icon="edit"
+                    color="primary"
+                    size="sm"
+                    :to="{ name: 'patient-edit', params: { id: props.row.id } }"
+                  />
+                  <q-btn
+                    v-if="authStore.hasPermission('PatientController', 'remove')"
+                    flat
+                    dense
+                    round
+                    icon="delete"
+                    color="negative"
+                    size="sm"
+                    @click="confirmDelete(props.row)"
+                  />
+                </div>
+              </div>
+
+              <q-separator class="q-my-xs opacity-40" />
+
+              <div class="row q-col-gutter-xs text-caption q-mt-xs">
+                <div class="col-6 text-grey-7">
+                  <span class="text-weight-bold">CPF:</span> {{ props.row.cpf || '—' }}
+                </div>
+                <div class="col-6 text-grey-7">
+                  <span class="text-weight-bold">Tel:</span> {{ props.row.cellphone || '—' }}
+                </div>
+                <div class="col-6 text-grey-7">
+                  <span class="text-weight-bold">Cidade:</span> {{ props.row.city || '—' }}
+                </div>
+                <div class="col-6 text-grey-7">
+                  <span class="text-weight-bold">Nasc:</span> {{ formatDate(props.row.birthDate) }}
+                </div>
+              </div>
+            </q-card>
+          </div>
+        </template>
+
+        <!-- Template Desktop das Células -->
         <template #body-cell-cpf="props">
           <q-td :props="props">
-            <span class="text-mono">{{ props.value }}</span>
+            <span class="text-mono">{{ props.value || '—' }}</span>
           </q-td>
         </template>
 
-        <!-- Data de nascimento formatada -->
         <template #body-cell-birthDate="props">
           <q-td :props="props">
             {{ formatDate(props.value) }}
           </q-td>
         </template>
 
-        <!-- Ações -->
         <template #body-cell-actions="props">
-          <q-td :props="props" class="text-right">
+          <q-td :props="props" class="text-right no-wrap">
             <q-btn
               v-if="authStore.hasPermission('PatientController', 'update')"
               flat
@@ -110,9 +167,9 @@ const columns = computed(() => {
     { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' as const },
     { name: 'name', label: 'Nome', field: 'name', sortable: true, align: 'left' as const },
     { name: 'cpf', label: 'CPF', field: 'cpf', align: 'left' as const },
-    { name: 'birthDate', label: 'Nascimento', field: 'birthDate', sortable: true, align: 'left' as const },
-    { name: 'cellphone', label: 'Celular', field: 'cellphone', align: 'left' as const },
+    { name: 'cellphone', label: 'Telefone', field: 'cellphone', align: 'left' as const },
     { name: 'city', label: 'Cidade', field: 'city', align: 'left' as const },
+    { name: 'birthDate', label: 'Nascimento', field: 'birthDate', align: 'left' as const },
   ];
 
   if (authStore.hasPermission('PatientController', 'update') || authStore.hasPermission('PatientController', 'remove')) {
@@ -126,17 +183,21 @@ const filteredPatients = computed(() => {
   if (!search.value) return patients.value;
   const q = search.value.toLowerCase();
   return patients.value.filter(
-    (p: Patient) =>
-      p.name.toLowerCase().includes(q) ||
-      p.cpf?.toLowerCase().includes(q) ||
+    (p) =>
+      p.name?.toLowerCase().includes(q) ||
+      p.cpf?.includes(q) ||
       p.city?.toLowerCase().includes(q),
   );
 });
 
-function formatDate(date: string) {
-  if (!date) return '-';
-  const [year, month, day] = date.split('T')[0]!.split('-') as [string, string, string];
-  return `${day}/${month}/${year}`;
+function formatDate(dateStr?: string) {
+  if (!dateStr) return '—';
+  try {
+    const [year, month, day] = dateStr.split('T')[0].split('-');
+    return `${day}/${month}/${year}`;
+  } catch {
+    return dateStr;
+  }
 }
 
 function confirmDelete(patient: Patient) {
@@ -156,5 +217,49 @@ function confirmDelete(patient: Patient) {
   });
 }
 
-onMounted(() => patientsStore.fetchAll());
+onMounted(() => {
+  patientsStore.fetchAll();
+});
 </script>
+
+<style scoped lang="scss">
+.responsive-page {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.picpay-action-btn {
+  border-radius: 999px;
+  font-weight: 700;
+  padding: 8px 18px;
+}
+
+.mobile-item-card {
+  border-radius: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+  background: #FFFFFF;
+  transition: transform 0.15s ease;
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+.patient-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(17, 199, 111, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 600px) {
+  .lt-sm-full {
+    width: 100%;
+    margin-top: 8px;
+  }
+}
+</style>

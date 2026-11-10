@@ -1,22 +1,23 @@
 <template>
-  <q-page padding>
-    <div class="row items-center justify-between q-mb-lg">
+  <q-page padding class="responsive-page">
+    <div class="row items-center justify-between q-mb-md q-mb-sm-lg gap-sm">
       <div>
-        <div class="text-h5 text-weight-bold text-primary">Usuários</div>
-        <div class="text-caption text-grey-6">Gerencie os usuários do sistema</div>
+        <div class="text-h5 text-weight-bolder text-dark">Usuários</div>
+        <div class="text-caption text-grey-7">Gerencie colaboradores e níveis de acesso</div>
       </div>
       <q-btn
         v-if="authStore.hasPermission('UserController', 'create')"
         unelevated
         color="primary"
-        icon="person_add"
+        icon="add"
         label="Novo Usuário"
+        class="picpay-action-btn lt-sm-full"
         @click="openDialog()"
       />
     </div>
 
     <!-- Filtro por Clínica (Disponível para Clínica Mestre) -->
-    <q-card v-if="isMasterClinic" flat bordered class="q-mb-md q-pa-sm">
+    <q-card v-if="isMasterClinic" flat bordered class="q-mb-md q-pa-sm filter-card">
       <div class="row items-center q-col-gutter-md">
         <div class="col-12 col-md-5 col-lg-4">
           <q-select
@@ -29,7 +30,7 @@
             outlined
             dense
             clearable
-            label="Filtrar por Clínica / Estabelecimento"
+            label="Filtrar por Estabelecimento"
             @update:model-value="onFilterChange"
           >
             <template #prepend>
@@ -37,7 +38,7 @@
             </template>
           </q-select>
         </div>
-        <div class="col text-caption text-grey-7">
+        <div class="col-12 col-md-7 text-caption text-grey-7">
           <span v-if="selectedFilterClient === 'all'">
             Exibindo usuários de <strong>todas as clínicas</strong> cadastradas.
           </span>
@@ -51,26 +52,91 @@
       </div>
     </q-card>
 
-    <!-- Tabela -->
-    <q-card flat bordered>
+    <!-- Tabela Híbrida de Usuários: Desktop Tabela / Mobile Cards PicPay -->
+    <q-card flat bordered class="table-card">
       <q-table
         :rows="users"
         :columns="columns"
         row-key="id"
         :loading="loading"
+        :grid="$q.screen.lt.sm"
         :rows-per-page-options="[10, 20, 50]"
         flat
         no-data-label="Nenhum usuário encontrado"
         loading-label="Carregando usuários..."
+        class="responsive-table"
       >
-        <!-- Roles badges -->
+        <!-- Card Mobile PicPay -->
+        <template #item="props">
+          <div class="col-12 q-pa-xs">
+            <q-card flat class="mobile-item-card q-pa-md">
+              <div class="row items-center justify-between no-wrap q-mb-xs">
+                <div class="row items-center no-wrap ellipsis">
+                  <div class="user-avatar q-mr-sm">
+                    <q-icon name="person" size="18px" color="primary" />
+                  </div>
+                  <div class="text-weight-bold text-dark ellipsis text-subtitle2">
+                    {{ props.row.name }}
+                  </div>
+                </div>
+                <div class="row items-center no-wrap q-gutter-xs">
+                  <q-btn
+                    v-if="authStore.hasPermission('UserController', 'update')"
+                    flat
+                    dense
+                    round
+                    icon="edit"
+                    color="primary"
+                    size="sm"
+                    @click="openDialog(props.row)"
+                  />
+                  <q-btn
+                    v-if="authStore.hasPermission('UserController', 'remove')"
+                    flat
+                    dense
+                    round
+                    icon="delete"
+                    color="negative"
+                    size="sm"
+                    @click="confirmDelete(props.row)"
+                  />
+                </div>
+              </div>
+
+              <div class="text-caption text-grey-7 q-mb-xs">
+                <q-icon name="mail_outline" size="14px" class="q-mr-xs" />
+                {{ props.row.email }}
+              </div>
+
+              <q-separator class="q-my-xs opacity-40" />
+
+              <div class="row items-center justify-between q-mt-xs">
+                <div class="text-caption text-grey-6 ellipsis" style="max-width: 50%">
+                  {{ props.row.client?.name || '—' }}
+                </div>
+                <div class="row items-center q-gutter-xs">
+                  <q-badge
+                    v-for="role in props.row.roles"
+                    :key="role.id"
+                    color="primary"
+                  >
+                    {{ role.name }}
+                  </q-badge>
+                  <span v-if="!props.row.roles?.length" class="text-caption text-grey-5">—</span>
+                </div>
+              </div>
+            </q-card>
+          </div>
+        </template>
+
+        <!-- Template Desktop -->
         <template #body-cell-roles="props">
           <q-td :props="props">
             <q-badge
               v-for="role in props.row.roles"
               :key="role.id"
               color="primary"
-              class="q-mr-xs"
+              class="q-mr-xs q-mb-xs"
             >
               {{ role.name }}
             </q-badge>
@@ -78,19 +144,17 @@
           </q-td>
         </template>
 
-        <!-- Cliente -->
         <template #body-cell-client="props">
           <q-td :props="props">
-            <q-badge v-if="props.row.client?.name" color="blue-grey" outline>
+            <q-badge v-if="props.row.client?.name" color="grey-2" text-color="dark" class="text-weight-bold">
               {{ props.row.client.name }}
             </q-badge>
             <span v-else class="text-caption text-grey-6">—</span>
           </q-td>
         </template>
 
-        <!-- Ações -->
         <template #body-cell-actions="props">
-          <q-td :props="props" class="text-right">
+          <q-td :props="props" class="text-right no-wrap">
             <q-btn
               v-if="authStore.hasPermission('UserController', 'update')"
               flat
@@ -118,18 +182,18 @@
       </q-table>
     </q-card>
 
-    <!-- Dialog Criar/Editar Usuário -->
+    <!-- Dialog Criar/Editar Usuário Responsivo -->
     <q-dialog v-model="dialogOpen" persistent max-width="600px">
-      <q-card style="min-width: 480px">
+      <q-card style="min-width: 320px; width: 600px" class="q-pa-xs">
         <q-card-section class="row items-center q-pb-none">
-          <div class="text-h6 font-weight-bold">
+          <div class="text-h6 text-weight-bolder text-dark">
             {{ editingUser ? 'Editar Usuário' : 'Novo Usuário' }}
           </div>
           <q-space />
           <q-btn icon="close" flat round dense v-close-popup />
         </q-card-section>
 
-        <q-card-section>
+        <q-card-section class="q-pt-md">
           <q-form @submit.prevent="saveUser" class="q-gutter-md">
             <q-input
               v-model="userForm.name"
@@ -200,13 +264,14 @@
             />
 
             <div class="row justify-end q-gutter-sm q-mt-md">
-              <q-btn flat label="Cancelar" v-close-popup />
+              <q-btn flat label="Cancelar" color="grey-7" v-close-popup />
               <q-btn
                 unelevated
                 type="submit"
-                :label="editingUser ? 'Salvar' : 'Criar'"
+                :label="editingUser ? 'Salvar Alterações' : 'Criar Usuário'"
                 color="primary"
                 :loading="saving"
+                class="picpay-action-btn"
               />
             </div>
           </q-form>
@@ -296,7 +361,6 @@ async function reloadCurrentUsers() {
 }
 
 async function onClientChange(clientId: number | null) {
-  // Limpa as roles selecionadas quando a clínica muda para não manter perfis de outro cliente
   userForm.role_ids = [];
   const targetId = clientId || authStore.user?.client?.id;
   await rolesStore.fetchAll(targetId);
@@ -380,3 +444,45 @@ onMounted(async () => {
   await rolesStore.fetchAll();
 });
 </script>
+
+<style scoped lang="scss">
+.responsive-page {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.picpay-action-btn {
+  border-radius: 999px;
+  font-weight: 700;
+  padding: 8px 18px;
+}
+
+.mobile-item-card {
+  border-radius: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+  background: #FFFFFF;
+  transition: transform 0.15s ease;
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(17, 199, 111, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 600px) {
+  .lt-sm-full {
+    width: 100%;
+    margin-top: 8px;
+  }
+}
+</style>

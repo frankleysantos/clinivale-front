@@ -1,1 +1,246 @@
-// app global css
+// Estilos Globais inspirados no PicPay Mobile / App Design System
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
+
+:root {
+  --picpay-green: #11C76F;
+  --picpay-green-dark: #0A8B4C;
+  --picpay-green-glow: rgba(17, 199, 111, 0.32);
+  --picpay-green-light: rgba(17, 199, 111, 0.12);
+  --picpay-dark: #0D1612;
+  --bg-page: #F5F7F6;
+  --text-main: #0B1612;
+  --text-muted: #6B7C75;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--bg-page);
+  color: var(--text-main);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.015em;
+}
+
+// ========================================================
+// BOTÕES ESTILO PICPAY (Pills, feedback tátil e sombras)
+// ========================================================
+.q-btn {
+  border-radius: 999px; // Estilo pílula característico do PicPay
+  text-transform: none;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  padding: 10px 22px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+  &.q-btn--round {
+    border-radius: 50%;
+    padding: 0;
+  }
+
+  &.q-btn--unelevated.bg-primary {
+    background: linear-gradient(135deg, #11C76F 0%, #0CB062 100%) !important;
+    color: #FFFFFF !important;
+    box-shadow: 0 4px 14px rgba(17, 199, 111, 0.35);
+
+    &:hover {
+      background: linear-gradient(135deg, #15D87B 0%, #11C76F 100%) !important;
+      box-shadow: 0 8px 24px rgba(17, 199, 111, 0.45);
+      transform: translateY(-1.5px);
+    }
+
+    &:active {
+      transform: scale(0.97); // Micro-interação de toque do app PicPay
+      box-shadow: 0 2px 8px rgba(17, 199, 111, 0.25);
+    }
+  }
+
+  &.q-btn--flat {
+    border-radius: 12px;
+    &:hover {
+      background: rgba(17, 199, 111, 0.08);
+    }
+  }
+}
+
+// Botões fixos flutuantes / bottom-sheet no mobile
+@media (max-width: 600px) {
+  .mobile-full-width-btn {
+    width: 100% !important;
+    height: 48px;
+    font-size: 1rem;
+    border-radius: 14px;
+  }
+}
+
+// ========================================================
+// CARDS PICPAY (Bordas arredondadas 20-24px e sombras difusas)
+// ========================================================
+.q-card {
+  border-radius: 20px;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  background: #FFFFFF;
+  box-shadow: 0 4px 20px -2px rgba(11, 22, 18, 0.03), 0 1px 3px 0 rgba(11, 22, 18, 0.02);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+
+  &.q-card--bordered {
+    border: 1px solid rgba(0, 0, 0, 0.05);
+  }
+}
+
+// ========================================================
+// TABELAS COM COMPORTAMENTO HÍBRIDO (Grid no Desktop / Cartões no Mobile)
+// ========================================================
+.q-table__container {
+  border-radius: 20px;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  box-shadow: 0 4px 24px -4px rgba(11, 22, 18, 0.04);
+  background: #FFFFFF;
+  overflow: hidden;
+  max-width: 100%;
+
+  .q-table thead tr th {
+    font-weight: 800;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #7A8B84;
+    background-color: #FAFCFB;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 14px 16px;
+    white-space: nowrap;
+  }
+
+  .q-table tbody tr {
+    transition: all 0.15s ease;
+
+    &:hover {
+      background-color: #F0FAF5 !important;
+    }
+
+    td {
+      font-size: 0.88rem;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+      padding: 14px 16px;
+    }
+  }
+
+  .q-table__bottom {
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 16px;
+  }
+}
+
+// Estilo Card-View do PicPay quando a tabela estiver em modo :grid (Mobile)
+.q-table__grid-content {
+  gap: 12px;
+  padding: 8px;
+
+  .q-table__grid-item-card {
+    border-radius: 18px !important;
+    border: 1px solid rgba(0, 0, 0, 0.05) !important;
+    box-shadow: 0 2px 12px rgba(11, 22, 18, 0.04) !important;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    padding: 6px;
+
+    &:active {
+      transform: scale(0.98);
+      background-color: #F8FAF9;
+    }
+
+    .q-table__grid-item-row {
+      padding: 6px 4px;
+      font-size: 0.88rem;
+
+      .q-table__grid-item-title {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #7A8B84;
+      }
+
+      .q-table__grid-item-value {
+        font-weight: 600;
+        color: #0B1612;
+      }
+    }
+  }
+}
+
+// Inputs e Selects limpos com foco PicPay Green
+.q-field--outlined {
+  .q-field__control {
+    border-radius: 14px;
+    background: #FFFFFF;
+    border-color: rgba(0, 0, 0, 0.1);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  &.q-field--focused .q-field__control {
+    border-color: #11C76F !important;
+    box-shadow: 0 0 0 4px rgba(17, 199, 111, 0.15);
+  }
+
+  .q-field__label {
+    font-weight: 500;
+  }
+}
+
+// Badges elegantes estilo pill
+.q-badge {
+  border-radius: 999px;
+  font-weight: 700;
+  padding: 5px 12px;
+  letter-spacing: -0.01em;
+  font-size: 0.75rem;
+}
+
+// Diálogos modais com comportamento Bottom Sheet no mobile
+.q-dialog__inner > div {
+  border-radius: 24px !important;
+  box-shadow: 0 24px 64px -12px rgba(11, 22, 18, 0.2) !important;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+}
+
+@media (max-width: 600px) {
+  // Transforma o modal em Bottom Sheet com cantos superiores arredondados
+  .q-dialog__inner--minimized > div {
+    max-width: 100vw !important;
+    width: 100vw !important;
+    border-radius: 24px 24px 0 0 !important;
+    margin-bottom: 0 !important;
+    position: fixed;
+    bottom: 0;
+  }
+}
+
+// Bottom Bar Mobile (Navegação PicPay estilo App)
+.mobile-bottom-nav {
+  display: none;
+}
+
+@media (max-width: 700px) {
+  .mobile-bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 64px;
+    background: #FFFFFF;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
+    z-index: 2000;
+    align-items: center;
+    justify-content: space-around;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  // Adiciona margem no rodapé das páginas para a bottom nav não cobrir o conteúdo
+  .q-page {
+    padding-bottom: 80px !important;
+  }
+}

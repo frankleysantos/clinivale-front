@@ -7,12 +7,12 @@
 </template>
 
 <script setup lang="ts">
-// Layout simples sem header/sidebar para telas de autenticação
+// Layout com estilo moderno PicPay Dark/Green
 </script>
 
 <style scoped>
 .auth-layout {
-  background: linear-gradient(135deg, #1a237e 0%, #0d47a1 50%, #01579b 100%);
+  background: radial-gradient(circle at 15% 20%, #0D281C 0%, #081610 50%, #030806 100%);
   min-height: 100vh;
 }
 </style>
