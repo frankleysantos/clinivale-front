@@ -10,9 +10,10 @@ Antes de realizar qualquer alteração de código ou responder a requisições, 
 - Garantir que todas as chamadas da API utilizem o token JWT contendo a clínica ativa logada (`authStore.user.client.id`).
 - Não enviar `client_id` manualmente se o backend já resolve a clínica ativa pelo token JWT.
 
-## 3. Reutilização de Componentes e UI Quasar
+## 3. Reutilização de Componentes e Estrutura Modular
+- **Arquitetura por Módulos:** O frontend é organizado em `src/modules/<modulo>/` contendo suas próprias `pages/`, `stores/`, `components/` e `routes.ts`.
 - Reaproveitar os componentes do Quasar Framework (`<q-card>`, `<q-dialog>`, `<q-select>`, `<q-btn>`, `<q-input>`, etc.).
-- Utilizar as stores do Pinia (`useAuthStore`, `usePatientsStore`, etc.) para gerenciamento de estado e chamadas de API.
+- Utilizar as stores do Pinia de cada módulo para gerenciamento de estado e chamadas de API.
 
 ## 4. Memória e Contexto do Projeto (.agents)
 - Consulte `.agents/PROJECT_SPEC.md` e o servidor de memória MCP (`.agents/mcp_config.json`) para consultar o histórico de decisões e regras já implementadas.

@@ -1,21 +1,16 @@
 import type { RouteRecordRaw } from 'vue-router';
+import { authRoutes } from '@/modules/auth/routes';
+import { dashboardRoutes } from '@/modules/dashboard/routes';
+import { patientRoutes } from '@/modules/patients/routes';
+import { userRoutes } from '@/modules/users/routes';
+import { roleRoutes } from '@/modules/roles/routes';
+import { clientRoutes } from '@/modules/clients/routes';
 
 const routes: RouteRecordRaw[] = [
-  // Rotas de autenticação (sem sidebar)
-  {
-    path: '/login',
-    component: () => import('@/layouts/AuthLayout.vue'),
-    children: [
-      {
-        path: '',
-        name: 'login',
-        component: () => import('@/pages/LoginPage.vue'),
-        meta: { public: true },
-      },
-    ],
-  },
+  // Rotas de autenticação (sem sidebar / AuthLayout)
+  ...authRoutes,
 
-  // Rotas protegidas (com sidebar)
+  // Rotas protegidas (com sidebar / MainLayout)
   {
     path: '/',
     component: () => import('@/layouts/MainLayout.vue'),
@@ -25,55 +20,13 @@ const routes: RouteRecordRaw[] = [
         path: '',
         redirect: { name: 'dashboard' },
       },
-      {
-        path: 'dashboard',
-        name: 'dashboard',
-        component: () => import('@/pages/DashboardPage.vue'),
-        meta: { requiresAuth: true, title: 'Dashboard' },
-      },
-      // Pacientes
-      {
-        path: 'pacientes',
-        name: 'patients',
-        component: () => import('@/pages/PatientsPage.vue'),
-        meta: { requiresAuth: true, title: 'Pacientes' },
-      },
-      {
-        path: 'pacientes/novo',
-        name: 'patient-create',
-        component: () => import('@/pages/PatientFormPage.vue'),
-        meta: { requiresAuth: true, title: 'Novo Paciente' },
-      },
-      {
-        path: 'pacientes/:id/editar',
-        name: 'patient-edit',
-        component: () => import('@/pages/PatientFormPage.vue'),
-        meta: { requiresAuth: true, title: 'Editar Paciente' },
-      },
-      // Usuários
-      {
-        path: 'usuarios',
-        name: 'users',
-        component: () => import('@/pages/UsersPage.vue'),
-        meta: { requiresAuth: true, title: 'Usuários' },
-      },
-      // Perfis / Roles
-      {
-        path: 'roles',
-        name: 'roles',
-        component: () => import('@/pages/RolesPage.vue'),
-        meta: { requiresAuth: true, title: 'Perfis e Permissões' },
-      },
-      // Clientes
-      {
-        path: 'clientes',
-        name: 'clients',
-        component: () => import('@/pages/ClientsPage.vue'),
-        meta: { requiresAuth: true, title: 'Clientes' },
-      },
+      ...dashboardRoutes,
+      ...patientRoutes,
+      ...userRoutes,
+      ...roleRoutes,
+      ...clientRoutes,
     ],
   },
-
 
   // 404
   {

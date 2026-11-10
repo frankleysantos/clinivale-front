@@ -6,7 +6,7 @@
         <div class="text-caption text-grey-6">Crie e gerencie as roles do sistema com suas respectivas regras de acesso</div>
       </div>
       <q-btn
-        v-if="authStore.hasPermission('RolesController', 'createRoles')"
+        v-if="canCreateRole"
         unelevated
         color="primary"
         icon="add_moderator"
@@ -27,6 +27,16 @@
         no-data-label="Nenhum perfil cadastrado"
         loading-label="Carregando perfis..."
       >
+        <!-- Cliente / Clínica -->
+        <template #body-cell-client="props">
+          <q-td :props="props">
+            <q-badge v-if="props.row.client?.name" color="blue-grey" outline>
+              {{ props.row.client.name }}
+            </q-badge>
+            <span v-else class="text-caption text-grey-6">Global / Padrão</span>
+          </q-td>
+        </template>
+
         <!-- Permissões / Regras -->
         <template #body-cell-permissions="props">
           <q-td :props="props">
@@ -91,6 +101,23 @@
               outlined
               dense
               :rules="[(v) => !!v || 'Nome do perfil é obrigatório']"
+            />
+
+            <!-- Seletor de Clínica se for Clínica Mestre e tiver permissão de criar role -->
+            <q-select
+              v-if="isMasterClinic && canCreateRole"
+              v-model="roleForm.client_id"
+              :options="clients"
+              option-value="id"
+              option-label="name"
+              emit-value
+              map-options
+              outlined
+              dense
+              clearable
+              label="Clínica / Estabelecimento de Destino *"
+              hint="Como Clínica Mestre, selecione para qual clínica este perfil será criado"
+              :rules="[(v) => !!v || 'Selecione a clínica para vincular este perfil']"
             />
 
             <!-- Seção de Permissões -->
@@ -174,13 +201,25 @@
 import { reactive, ref, computed, onMounted } from 'vue';
 import { useQuasar } from 'quasar';
 import { useRolesStore, type RoleItem, type AvailablePermissionGroup, type PermissionRule } from 'src/stores/roles';
+import { useClientsStore } from 'src/stores/clients';
 import { useAuthStore } from 'src/stores/auth';
 import { storeToRefs } from 'pinia';
 
 const $q = useQuasar();
 const authStore = useAuthStore();
 const rolesStore = useRolesStore();
+const clientsStore = useClientsStore();
 const { roles, availablePermissions, loading } = storeToRefs(rolesStore);
+const { clients } = storeToRefs(clientsStore);
+
+const isMasterClinic = computed(() => {
+  const currentClient = authStore.user?.client;
+  return Number(currentClient?.id) === 1 || currentClient?.name?.toLowerCase() === 'clinivale';
+});
+
+const canCreateRole = computed(() => {
+  return authStore.hasPermission('RolesController', 'createRoles');
+});
 
 const dialogOpen = ref(false);
 const saving = ref(false);
@@ -188,6 +227,7 @@ const editingRole = ref<RoleItem | null>(null);
 
 const roleForm = reactive({
   name: '',
+  client_id: null as number | null,
 });
 
 // Mapa de controle reativo para checkboxes `Controller:Method` => boolean
@@ -197,6 +237,7 @@ const columns = computed(() => {
   const cols = [
     { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' as const },
     { name: 'name', label: 'Nome do Perfil', field: 'name', sortable: true, align: 'left' as const },
+    { name: 'client', label: 'Clínica / Estabelecimento', field: 'client', align: 'left' as const },
     { name: 'permissions', label: 'Regras de Permissão', field: 'permissions', align: 'left' as const },
   ];
 
@@ -216,6 +257,12 @@ function formatPermissionsPreview(permissions?: PermissionRule[]): string {
 async function openDialog(role?: RoleItem) {
   editingRole.value = role ?? null;
   roleForm.name = role?.name ?? '';
+  roleForm.client_id = role?.client_id ?? role?.client?.id ?? authStore.user?.client?.id ?? null;
+
+  // Carregar lista de clientes se for clínica mestre
+  if (isMasterClinic.value && clients.value.length === 0) {
+    await clientsStore.fetchAll();
+  }
 
   // Limpar mapa
   Object.keys(selectedPermissionsMap).forEach((key) => {
@@ -288,19 +335,20 @@ async function saveRole() {
 
   saving.value = true;
   try {
+    const payload = {
+      name: roleForm.name,
+      permissions,
+      ...(roleForm.client_id ? { client_id: Number(roleForm.client_id) } : {}),
+    };
+
     if (editingRole.value) {
-      await rolesStore.update(editingRole.value.id, {
-        name: roleForm.name,
-        permissions,
-      });
+      await rolesStore.update(editingRole.value.id, payload);
       $q.notify({ type: 'positive', message: 'Perfil atualizado com sucesso.', position: 'top' });
     } else {
-      await rolesStore.create({
-        name: roleForm.name,
-        permissions,
-      });
+      await rolesStore.create(payload);
       $q.notify({ type: 'positive', message: 'Perfil criado com sucesso.', position: 'top' });
     }
+    await rolesStore.fetchAll();
     dialogOpen.value = false;
   } catch (error: any) {
     const msg = error?.response?.data?.message || 'Erro ao salvar perfil.';
@@ -330,5 +378,8 @@ function confirmDelete(role: RoleItem) {
 onMounted(async () => {
   await rolesStore.fetchAll();
   await rolesStore.fetchAvailablePermissions();
+  if (isMasterClinic.value) {
+    await clientsStore.fetchAll();
+  }
 });
 </script>
