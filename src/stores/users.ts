@@ -15,6 +15,7 @@ export interface CreateUserDto {
   email: string;
   password?: string;
   role_ids?: number[];
+  client_id?: number;
 }
 
 export const useUsersStore = defineStore('users', () => {

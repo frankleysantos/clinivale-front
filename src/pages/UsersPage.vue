@@ -127,6 +127,23 @@
             </q-input>
 
             <q-select
+              v-if="isMasterClinic"
+              v-model="userForm.client_id"
+              :options="clients"
+              option-value="id"
+              option-label="name"
+              emit-value
+              map-options
+              outlined
+              dense
+              clearable
+              label="Clínica / Estabelecimento *"
+              hint="Selecione o estabelecimento deste usuário"
+              :rules="[(v) => !!v || 'Clínica obrigatória']"
+              @update:model-value="onClientChange"
+            />
+
+            <q-select
               v-model="userForm.role_ids"
               :options="availableRoles"
               option-value="id"
@@ -163,6 +180,7 @@ import { reactive, ref, computed, onMounted } from 'vue';
 import { useQuasar } from 'quasar';
 import { useUsersStore, type UserItem } from 'src/stores/users';
 import { useRolesStore } from 'src/stores/roles';
+import { useClientsStore } from 'src/stores/clients';
 import { useAuthStore } from 'src/stores/auth';
 import { storeToRefs } from 'pinia';
 
@@ -170,8 +188,15 @@ const $q = useQuasar();
 const authStore = useAuthStore();
 const usersStore = useUsersStore();
 const rolesStore = useRolesStore();
+const clientsStore = useClientsStore();
 const { users, loading } = storeToRefs(usersStore);
 const { roles: availableRoles } = storeToRefs(rolesStore);
+const { clients } = storeToRefs(clientsStore);
+
+const isMasterClinic = computed(() => {
+  const currentClient = authStore.user?.client;
+  return Number(currentClient?.id) === 1 || currentClient?.name?.toLowerCase() === 'clinivale';
+});
 
 const dialogOpen = ref(false);
 const saving = ref(false);
@@ -182,6 +207,7 @@ const userForm = reactive({
   name: '',
   email: '',
   password: '',
+  client_id: null as number | null,
   role_ids: [] as number[],
 });
 
@@ -201,16 +227,27 @@ const columns = computed(() => {
   return cols;
 });
 
+async function onClientChange(clientId: number | null) {
+  // Limpa as roles selecionadas quando a clínica muda para não manter perfis de outro cliente
+  userForm.role_ids = [];
+  const targetId = clientId || authStore.user?.client?.id;
+  await rolesStore.fetchAll(targetId);
+}
+
 async function openDialog(user?: UserItem) {
   editingUser.value = user ?? null;
   userForm.name = user?.name ?? '';
   userForm.email = user?.email ?? '';
   userForm.password = '';
+  userForm.client_id = user?.client?.id ?? authStore.user?.client?.id ?? null;
   userForm.role_ids = user?.roles?.map((r) => r.id) || [];
   showPwd.value = false;
 
-  if (availableRoles.value.length === 0) {
-    await rolesStore.fetchAll();
+  const targetClientId = userForm.client_id || authStore.user?.client?.id;
+  await rolesStore.fetchAll(targetClientId);
+
+  if (isMasterClinic.value && clients.value.length === 0) {
+    await clientsStore.fetchAll();
   }
 
   dialogOpen.value = true;
@@ -224,6 +261,7 @@ async function saveUser() {
         name: userForm.name,
         email: userForm.email,
         role_ids: userForm.role_ids,
+        ...(userForm.client_id ? { client_id: userForm.client_id } : {}),
       });
       $q.notify({ type: 'positive', message: 'Usuário atualizado com sucesso.', position: 'top' });
     } else {
@@ -232,6 +270,7 @@ async function saveUser() {
         email: userForm.email,
         password: userForm.password,
         role_ids: userForm.role_ids,
+        ...(userForm.client_id ? { client_id: userForm.client_id } : {}),
       });
       $q.notify({ type: 'positive', message: 'Usuário criado com sucesso.', position: 'top' });
     }
