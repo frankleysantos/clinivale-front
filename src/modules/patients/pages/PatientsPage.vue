@@ -100,6 +100,19 @@
                   <span class="text-weight-bold">Nasc:</span> {{ formatDate(props.row.birthDate) }}
                 </div>
               </div>
+
+              <div class="q-mt-sm row justify-end">
+                <q-btn
+                  flat
+                  dense
+                  rounded
+                  size="sm"
+                  color="teal"
+                  icon="medical_information"
+                  label="Prontuário (PEP)"
+                  :to="{ name: 'patient-record', params: { id: props.row.id } }"
+                />
+              </div>
             </q-card>
           </div>
         </template>
@@ -119,6 +132,16 @@
 
         <template #body-cell-actions="props">
           <q-td :props="props" class="text-right no-wrap">
+            <q-btn
+              flat
+              dense
+              round
+              icon="medical_information"
+              color="teal"
+              :to="{ name: 'patient-record', params: { id: props.row.id } }"
+            >
+              <q-tooltip>Abrir Prontuário Eletrônico (PEP)</q-tooltip>
+            </q-btn>
             <q-btn
               v-if="authStore.hasPermission('PatientController', 'update')"
               flat

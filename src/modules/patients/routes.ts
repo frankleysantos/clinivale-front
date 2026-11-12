@@ -19,4 +19,10 @@ export const patientRoutes: RouteRecordRaw[] = [
     component: () => import('@/modules/patients/pages/PatientFormPage.vue'),
     meta: { requiresAuth: true, title: 'Editar Paciente' },
   },
+  {
+    path: 'pacientes/:id/prontuario',
+    name: 'patient-record',
+    component: () => import('@/modules/patients/pages/PatientRecordPage.vue'),
+    meta: { requiresAuth: true, title: 'Prontuário do Paciente' },
+  },
 ];
