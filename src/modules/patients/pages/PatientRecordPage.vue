@@ -763,14 +763,22 @@ onMounted(async () => {
   const patientId = Number(route.params['id']);
   if (patientId) {
     try {
-      patient.value = await patientsStore.fetchById(patientId);
+      patient.value = await patientsStore.fetchOne(patientId);
+    } catch (err: any) {
+      console.error('Erro ao carregar paciente:', err);
+      $q.notify({ type: 'negative', message: 'Erro ao carregar dados do paciente.' });
+    }
+
+    try {
       await Promise.all([
         store.fetchRecords(patientId),
         store.fetchPrescriptions(patientId),
         store.fetchCertificates(patientId),
       ]);
-    } catch {
-      $q.notify({ type: 'negative', message: 'Erro ao carregar dados do prontuário.' });
+    } catch (err: any) {
+      console.error('Erro ao carregar dados do prontuário:', err);
+      const msg = err?.response?.data?.message || err?.message || 'Erro ao carregar dados do prontuário.';
+      $q.notify({ type: 'negative', message: `Erro ao carregar prontuário: ${msg}` });
     }
   }
 });
