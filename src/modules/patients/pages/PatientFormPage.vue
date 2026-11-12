@@ -7,14 +7,14 @@
           {{ isEdit ? 'Editar Paciente' : 'Novo Paciente' }}
         </div>
         <div class="text-caption text-grey-7">
-          {{ isEdit ? 'Atualize os dados cadastrais' : 'Preencha os dados segundo os padrões SBIS/CFM' }}
+          {{ isEdit ? 'Atualize os dados cadastrais' : 'Preencha os dados em conformidade com as normas SBIS/CFM' }}
         </div>
       </div>
     </div>
 
     <q-form @submit.prevent="onSubmit">
       <div class="column q-gutter-y-lg">
-        <!-- 1. Dados Pessoais e Identificação SBIS -->
+        <!-- 1. Identificação do Paciente -->
         <q-card flat bordered class="form-card">
           <q-card-section class="q-pa-md q-pa-sm-lg">
             <div class="text-subtitle1 text-weight-bolder text-dark q-mb-md row items-center">
@@ -48,29 +48,6 @@
 
               <div class="col-12 col-sm-4">
                 <q-input
-                  v-model="form.cpf"
-                  label="CPF"
-                  outlined
-                  dense
-                  mask="###.###.###-##"
-                  unmasked-value
-                  hint="Opcional segundo SBIS (ex: recém-nascidos)"
-                />
-              </div>
-
-              <div class="col-12 col-sm-4">
-                <q-input
-                  v-model="form.cns"
-                  label="Cartão Nacional de Saúde (CNS / SUS)"
-                  outlined
-                  dense
-                  mask="###############"
-                  hint="15 dígitos"
-                />
-              </div>
-
-              <div class="col-12 col-sm-4">
-                <q-input
                   v-model="form.birthDate"
                   label="Data de nascimento *"
                   outlined
@@ -98,6 +75,21 @@
               </div>
 
               <div class="col-12 col-sm-4">
+                <q-select
+                  v-model="form.race"
+                  :options="raceOptions"
+                  option-value="value"
+                  option-label="label"
+                  emit-value
+                  map-options
+                  outlined
+                  dense
+                  label="Raça / Cor"
+                  hint="Padrão IBGE / SBIS"
+                />
+              </div>
+
+              <div class="col-12 col-sm-6">
                 <q-input
                   v-model="form.mother_name"
                   label="Nome completo da mãe *"
@@ -108,7 +100,7 @@
                 />
               </div>
 
-              <div class="col-12 col-sm-4">
+              <div class="col-12 col-sm-6">
                 <q-input
                   v-model="form.father_name"
                   label="Nome completo do pai"
@@ -117,7 +109,88 @@
                   hint="Filiação paterna (opcional)"
                 />
               </div>
+            </div>
+          </q-card-section>
+        </q-card>
 
+        <!-- 2. Documentos e Identificadores Oficiais -->
+        <q-card flat bordered class="form-card">
+          <q-card-section class="q-pa-md q-pa-sm-lg">
+            <div class="text-subtitle1 text-weight-bolder text-dark q-mb-md row items-center">
+              <div class="card-icon-box q-mr-sm">
+                <q-icon name="badge" color="primary" size="20px" />
+              </div>
+              Documentos de Identificação (Nacional e Saúde)
+            </div>
+
+            <div class="row q-col-gutter-md">
+              <div class="col-12 col-sm-4">
+                <q-input
+                  v-model="form.cpf"
+                  label="CPF"
+                  outlined
+                  dense
+                  mask="###.###.###-##"
+                  unmasked-value
+                  hint="Opcional segundo SBIS (ex: recém-nascidos)"
+                />
+              </div>
+
+              <div class="col-12 col-sm-4">
+                <q-input
+                  v-model="form.cns"
+                  label="Cartão Nacional de Saúde (CNS / SUS)"
+                  outlined
+                  dense
+                  mask="###############"
+                  hint="15 dígitos numéricos"
+                />
+              </div>
+
+              <div class="col-12 col-sm-4">
+                <q-input
+                  v-model="form.rg"
+                  label="Número do RG"
+                  outlined
+                  dense
+                  placeholder="Documento de Identidade"
+                />
+              </div>
+
+              <div class="col-12 col-sm-6">
+                <q-input
+                  v-model="form.rg_issuer"
+                  label="Órgão Emissor do RG"
+                  outlined
+                  dense
+                  placeholder="Ex: SSP, DETRAN, PC"
+                />
+              </div>
+
+              <div class="col-12 col-sm-6">
+                <q-select
+                  v-model="form.rg_state"
+                  :options="ufOptions"
+                  outlined
+                  dense
+                  label="UF do RG"
+                />
+              </div>
+            </div>
+          </q-card-section>
+        </q-card>
+
+        <!-- 3. Contatos e Profissão -->
+        <q-card flat bordered class="form-card">
+          <q-card-section class="q-pa-md q-pa-sm-lg">
+            <div class="text-subtitle1 text-weight-bolder text-dark q-mb-md row items-center">
+              <div class="card-icon-box q-mr-sm">
+                <q-icon name="contacts" color="primary" size="20px" />
+              </div>
+              Contatos e Ocupação
+            </div>
+
+            <div class="row q-col-gutter-md">
               <div class="col-12 col-sm-4">
                 <q-input
                   v-model="form.cellphone"
@@ -151,7 +224,7 @@
           </q-card-section>
         </q-card>
 
-        <!-- 2. Endereço e Localização -->
+        <!-- 4. Endereço e Localização -->
         <q-card flat bordered class="form-card">
           <q-card-section class="q-pa-md q-pa-sm-lg">
             <div class="text-subtitle1 text-weight-bolder text-dark q-mb-md row items-center">
@@ -264,7 +337,7 @@
 import { reactive, ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
-import { usePatientsStore } from 'src/stores/patients';
+import { usePatientsStore, type PatientGender, type PatientRace } from 'src/stores/patients';
 
 const $q = useQuasar();
 const route = useRoute();
@@ -280,6 +353,15 @@ const genderOptions = [
   { label: 'Indeterminado / Não informado', value: 'I' },
 ];
 
+const raceOptions = [
+  { label: 'Branca', value: 'BRANCA' },
+  { label: 'Preta', value: 'PRETA' },
+  { label: 'Parda', value: 'PARDA' },
+  { label: 'Amarela', value: 'AMARELA' },
+  { label: 'Indígena', value: 'INDIGENA' },
+  { label: 'Não informado', value: 'NAO_INFORMADO' },
+];
+
 const ufOptions = [
   'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA',
   'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN',
@@ -290,9 +372,13 @@ const form = reactive({
   name: '',
   social_name: '',
   cpf: '',
+  rg: '',
+  rg_issuer: '',
+  rg_state: '',
   cns: '',
   birthDate: '',
-  gender: 'M',
+  gender: 'M' as PatientGender,
+  race: 'NAO_INFORMADO' as PatientRace,
   mother_name: '',
   father_name: '',
   cellphone: '',
@@ -334,6 +420,9 @@ async function onSubmit() {
     const payload = {
       ...form,
       cpf: form.cpf ? form.cpf : undefined,
+      rg: form.rg ? form.rg : undefined,
+      rg_issuer: form.rg_issuer ? form.rg_issuer : undefined,
+      rg_state: form.rg_state ? form.rg_state : undefined,
       birthDate: parseDateToApi(form.birthDate),
     };
 
@@ -362,9 +451,13 @@ onMounted(async () => {
         form.name = patient.name ?? '';
         form.social_name = patient.social_name ?? '';
         form.cpf = patient.cpf ?? '';
+        form.rg = patient.rg ?? '';
+        form.rg_issuer = patient.rg_issuer ?? '';
+        form.rg_state = patient.rg_state ?? '';
         form.cns = patient.cns ?? '';
         form.birthDate = parseDateFromApi(patient.birthDate ?? '');
-        form.gender = (patient.gender as any) || 'M';
+        form.gender = patient.gender || 'M';
+        form.race = patient.race || 'NAO_INFORMADO';
         form.mother_name = patient.mother_name ?? '';
         form.father_name = patient.father_name ?? '';
         form.cellphone = patient.cellphone ?? '';

@@ -2,14 +2,21 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { api } from 'src/boot/api';
 
+export type PatientGender = 'M' | 'F' | 'I';
+export type PatientRace = 'BRANCA' | 'PRETA' | 'PARDA' | 'AMARELA' | 'INDIGENA' | 'NAO_INFORMADO';
+
 export interface Patient {
   id: number;
   name: string;
   social_name?: string;
   cpf?: string;
+  rg?: string;
+  rg_issuer?: string;
+  rg_state?: string;
   cns?: string;
   birthDate: string;
-  gender: 'M' | 'F' | 'I';
+  gender: PatientGender;
+  race?: PatientRace;
   mother_name: string;
   father_name?: string;
   cellphone: string;
@@ -32,9 +39,13 @@ export interface CreatePatientDto {
   name: string;
   social_name?: string;
   cpf?: string;
+  rg?: string;
+  rg_issuer?: string;
+  rg_state?: string;
   cns?: string;
   birthDate: string;
-  gender: 'M' | 'F' | 'I';
+  gender: PatientGender;
+  race?: PatientRace;
   mother_name: string;
   father_name?: string;
   cellphone: string;
