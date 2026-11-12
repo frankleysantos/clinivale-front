@@ -423,6 +423,13 @@ async function onSubmit() {
       rg: form.rg ? form.rg : undefined,
       rg_issuer: form.rg_issuer ? form.rg_issuer : undefined,
       rg_state: form.rg_state ? form.rg_state : undefined,
+      cns: form.cns ? form.cns : undefined,
+      email: form.email ? form.email : undefined,
+      father_name: form.father_name ? form.father_name : undefined,
+      social_name: form.social_name ? form.social_name : undefined,
+      postal_code: form.postal_code ? form.postal_code : undefined,
+      address_number: form.address_number ? form.address_number : undefined,
+      address_complement: form.address_complement ? form.address_complement : undefined,
       birthDate: parseDateToApi(form.birthDate),
     };
 
