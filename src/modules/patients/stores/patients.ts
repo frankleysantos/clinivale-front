@@ -5,27 +5,42 @@ import { api } from 'src/boot/api';
 export interface Patient {
   id: number;
   name: string;
+  social_name?: string;
   cpf: string;
+  cns?: string;
   birthDate: string;
+  gender: 'M' | 'F' | 'I';
+  mother_name: string;
   cellphone: string;
-  email: string;
+  email?: string;
+  postal_code?: string;
   address?: string;
+  address_number?: string;
+  address_complement?: string;
   neighborhood?: string;
   city?: string;
   state?: string;
   country?: string;
   occupation?: string;
+  clients?: Array<{ id: number; name: string }>;
   client?: { id: number; name: string };
 }
 
 export interface CreatePatientDto {
   client_id?: number;
   name: string;
+  social_name?: string;
   cpf: string;
+  cns?: string;
   birthDate: string;
+  gender: 'M' | 'F' | 'I';
+  mother_name: string;
   cellphone: string;
-  email: string;
+  email?: string;
+  postal_code?: string;
   address?: string;
+  address_number?: string;
+  address_complement?: string;
   neighborhood?: string;
   city?: string;
   state?: string;
@@ -69,6 +84,7 @@ export const usePatientsStore = defineStore('patients', () => {
     const { data } = await api.patch<Patient>(`/patient/${id}/update`, dto);
     const index = patients.value.findIndex((p) => p.id === id);
     if (index !== -1) patients.value[index] = data;
+    if (selected.value?.id === id) selected.value = data;
     return data;
   }
 

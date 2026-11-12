@@ -7,45 +7,69 @@
           {{ isEdit ? 'Editar Paciente' : 'Novo Paciente' }}
         </div>
         <div class="text-caption text-grey-7">
-          {{ isEdit ? 'Atualize os dados cadastrais' : 'Preencha os dados para cadastrar' }}
+          {{ isEdit ? 'Atualize os dados cadastrais' : 'Preencha os dados segundo os padrões SBIS/CFM' }}
         </div>
       </div>
     </div>
 
     <q-form @submit.prevent="onSubmit">
       <div class="column q-gutter-y-lg">
-        <!-- Dados pessoais -->
+        <!-- 1. Dados Pessoais e Identificação SBIS -->
         <q-card flat bordered class="form-card">
           <q-card-section class="q-pa-md q-pa-sm-lg">
             <div class="text-subtitle1 text-weight-bolder text-dark q-mb-md row items-center">
               <div class="card-icon-box q-mr-sm">
                 <q-icon name="person" color="primary" size="20px" />
               </div>
-              Dados Pessoais
+              Identificação do Paciente (Normas SBIS/CFM)
             </div>
 
-            <!-- Grade com q-col-gutter-md em vez de q-gutter -->
+            <!-- Grade estruturada com q-col-gutter-md -->
             <div class="row q-col-gutter-md">
-              <div class="col-12 col-sm-6">
+              <div class="col-12 col-sm-8">
                 <q-input
                   v-model="form.name"
                   label="Nome completo *"
                   outlined
                   dense
-                  :rules="[(v) => !!v || 'Nome obrigatório']"
+                  :rules="[(v) => !!v || 'Nome completo é obrigatório']"
                 />
               </div>
-              <div class="col-12 col-sm-3">
+
+              <div class="col-12 col-sm-4">
+                <q-input
+                  v-model="form.social_name"
+                  label="Nome social"
+                  outlined
+                  dense
+                  hint="Como prefere ser chamado (se aplicável)"
+                />
+              </div>
+
+              <div class="col-12 col-sm-4">
                 <q-input
                   v-model="form.cpf"
                   label="CPF *"
                   outlined
                   dense
                   mask="###.###.###-##"
+                  unmasked-value
                   :rules="[(v) => !!v || 'CPF obrigatório']"
                 />
               </div>
-              <div class="col-12 col-sm-3">
+
+              <div class="col-12 col-sm-4">
+                <q-input
+                  v-model="form.cns"
+                  label="Cartão Nacional de Saúde (CNS / SUS)"
+                  outlined
+                  dense
+                  mask="###############"
+                  hint="15 dígitos"
+                />
+              </div>
+
+              <div class="col-12 col-sm-4">
                 <q-input
                   v-model="form.birthDate"
                   label="Data de nascimento *"
@@ -56,6 +80,34 @@
                   :rules="[(v) => !!v || 'Data obrigatória']"
                 />
               </div>
+
+              <div class="col-12 col-sm-4">
+                <q-select
+                  v-model="form.gender"
+                  :options="genderOptions"
+                  option-value="value"
+                  option-label="label"
+                  emit-value
+                  map-options
+                  outlined
+                  dense
+                  label="Sexo ao Nascer *"
+                  hint="Padrão SBIS / RNDS"
+                  :rules="[(v) => !!v || 'Sexo é obrigatório']"
+                />
+              </div>
+
+              <div class="col-12 col-sm-8">
+                <q-input
+                  v-model="form.mother_name"
+                  label="Nome completo da mãe *"
+                  outlined
+                  dense
+                  hint="Exigido por normas SBIS/CFM para desambiguação"
+                  :rules="[(v) => !!v || 'Nome da mãe é obrigatório']"
+                />
+              </div>
+
               <div class="col-12 col-sm-4">
                 <q-input
                   v-model="form.cellphone"
@@ -66,19 +118,17 @@
                   :rules="[(v) => !!v || 'Celular obrigatório']"
                 />
               </div>
+
               <div class="col-12 col-sm-4">
                 <q-input
                   v-model="form.email"
-                  label="E-mail *"
+                  label="E-mail"
                   type="email"
                   outlined
                   dense
-                  :rules="[
-                    (v) => !!v || 'E-mail obrigatório',
-                    (v) => /.+@.+\..+/.test(v) || 'E-mail inválido',
-                  ]"
                 />
               </div>
+
               <div class="col-12 col-sm-4">
                 <q-input
                   v-model="form.occupation"
@@ -91,27 +141,59 @@
           </q-card-section>
         </q-card>
 
-        <!-- Endereço -->
+        <!-- 2. Endereço e Localização -->
         <q-card flat bordered class="form-card">
           <q-card-section class="q-pa-md q-pa-sm-lg">
             <div class="text-subtitle1 text-weight-bolder text-dark q-mb-md row items-center">
               <div class="card-icon-box q-mr-sm">
                 <q-icon name="location_on" color="primary" size="20px" />
               </div>
-              Endereço
+              Endereço Residencial
             </div>
 
-            <!-- Grade com q-col-gutter-md em vez de q-gutter -->
+            <!-- Grade estruturada com q-col-gutter-md -->
             <div class="row q-col-gutter-md">
+              <div class="col-12 col-sm-3">
+                <q-input
+                  v-model="form.postal_code"
+                  label="CEP"
+                  outlined
+                  dense
+                  mask="#####-###"
+                  unmasked-value
+                />
+              </div>
+
               <div class="col-12 col-sm-6">
                 <q-input
                   v-model="form.address"
-                  label="Endereço (rua, número)"
+                  label="Logradouro / Rua"
                   outlined
                   dense
                 />
               </div>
-              <div class="col-12 col-sm-6">
+
+              <div class="col-12 col-sm-3">
+                <q-input
+                  v-model="form.address_number"
+                  label="Número"
+                  outlined
+                  dense
+                  placeholder="Ex: 123 ou S/N"
+                />
+              </div>
+
+              <div class="col-12 col-sm-4">
+                <q-input
+                  v-model="form.address_complement"
+                  label="Complemento"
+                  outlined
+                  dense
+                  placeholder="Ex: Apto 101, Bloco B"
+                />
+              </div>
+
+              <div class="col-12 col-sm-4">
                 <q-input
                   v-model="form.neighborhood"
                   label="Bairro"
@@ -119,7 +201,8 @@
                   dense
                 />
               </div>
-              <div class="col-12 col-sm-5">
+
+              <div class="col-12 col-sm-4">
                 <q-input
                   v-model="form.city"
                   label="Cidade"
@@ -127,15 +210,17 @@
                   dense
                 />
               </div>
+
               <div class="col-12 col-sm-3">
-                <q-input
+                <q-select
                   v-model="form.state"
-                  label="Estado (UF)"
+                  :options="ufOptions"
                   outlined
                   dense
-                  maxlength="2"
+                  label="Estado (UF)"
                 />
               </div>
+
               <div class="col-12 col-sm-4">
                 <q-input
                   v-model="form.country"
@@ -158,7 +243,7 @@
           :label="isEdit ? 'Salvar Alterações' : 'Cadastrar Paciente'"
           color="primary"
           :loading="loading"
-          class="picpay-btn"
+          class="picpay-btn lt-sm-full"
         />
       </div>
     </q-form>
@@ -170,28 +255,45 @@ import { reactive, ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
 import { usePatientsStore } from 'src/stores/patients';
-import { useAuthStore } from 'src/stores/auth';
 
 const $q = useQuasar();
 const route = useRoute();
 const router = useRouter();
 const patientsStore = usePatientsStore();
-const authStore = useAuthStore();
 
 const loading = ref(false);
 const isEdit = computed(() => !!route.params['id']);
 
+const genderOptions = [
+  { label: 'Masculino', value: 'M' },
+  { label: 'Feminino', value: 'F' },
+  { label: 'Indeterminado / Não informado', value: 'I' },
+];
+
+const ufOptions = [
+  'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA',
+  'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN',
+  'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO',
+];
+
 const form = reactive({
   name: '',
+  social_name: '',
   cpf: '',
+  cns: '',
   birthDate: '',
+  gender: 'M',
+  mother_name: '',
   cellphone: '',
   email: '',
   occupation: '',
+  postal_code: '',
   address: '',
+  address_number: '',
+  address_complement: '',
   neighborhood: '',
   city: '',
-  state: '',
+  state: 'SP',
   country: 'Brasil',
 });
 
@@ -246,15 +348,22 @@ onMounted(async () => {
       const patient = await patientsStore.fetchOne(Number(route.params['id']));
       if (patient) {
         form.name = patient.name ?? '';
+        form.social_name = patient.social_name ?? '';
         form.cpf = patient.cpf ?? '';
+        form.cns = patient.cns ?? '';
         form.birthDate = parseDateFromApi(patient.birthDate ?? '');
+        form.gender = (patient.gender as any) || 'M';
+        form.mother_name = patient.mother_name ?? '';
         form.cellphone = patient.cellphone ?? '';
         form.email = patient.email ?? '';
         form.occupation = patient.occupation ?? '';
+        form.postal_code = patient.postal_code ?? '';
         form.address = patient.address ?? '';
+        form.address_number = patient.address_number ?? '';
+        form.address_complement = patient.address_complement ?? '';
         form.neighborhood = patient.neighborhood ?? '';
         form.city = patient.city ?? '';
-        form.state = patient.state ?? '';
+        form.state = patient.state ?? 'SP';
         form.country = patient.country ?? 'Brasil';
       }
     } catch {
@@ -292,5 +401,17 @@ onMounted(async () => {
   border-radius: 999px;
   font-weight: 700;
   padding: 10px 24px;
+  transition: transform 0.15s ease;
+
+  &:active {
+    transform: scale(0.97);
+  }
+}
+
+@media (max-width: 600px) {
+  .lt-sm-full {
+    width: 100%;
+    margin-top: 8px;
+  }
 }
 </style>
