@@ -49,12 +49,12 @@
               <div class="col-12 col-sm-4">
                 <q-input
                   v-model="form.cpf"
-                  label="CPF *"
+                  label="CPF"
                   outlined
                   dense
                   mask="###.###.###-##"
                   unmasked-value
-                  :rules="[(v) => !!v || 'CPF obrigatório']"
+                  hint="Opcional segundo SBIS (ex: recém-nascidos)"
                 />
               </div>
 
@@ -97,14 +97,24 @@
                 />
               </div>
 
-              <div class="col-12 col-sm-8">
+              <div class="col-12 col-sm-4">
                 <q-input
                   v-model="form.mother_name"
                   label="Nome completo da mãe *"
                   outlined
                   dense
-                  hint="Exigido por normas SBIS/CFM para desambiguação"
+                  hint="Obrigatório SBIS/CFM para desambiguação"
                   :rules="[(v) => !!v || 'Nome da mãe é obrigatório']"
+                />
+              </div>
+
+              <div class="col-12 col-sm-4">
+                <q-input
+                  v-model="form.father_name"
+                  label="Nome completo do pai"
+                  outlined
+                  dense
+                  hint="Filiação paterna (opcional)"
                 />
               </div>
 
@@ -284,6 +294,7 @@ const form = reactive({
   birthDate: '',
   gender: 'M',
   mother_name: '',
+  father_name: '',
   cellphone: '',
   email: '',
   occupation: '',
@@ -322,6 +333,7 @@ async function onSubmit() {
   try {
     const payload = {
       ...form,
+      cpf: form.cpf ? form.cpf : undefined,
       birthDate: parseDateToApi(form.birthDate),
     };
 
@@ -354,6 +366,7 @@ onMounted(async () => {
         form.birthDate = parseDateFromApi(patient.birthDate ?? '');
         form.gender = (patient.gender as any) || 'M';
         form.mother_name = patient.mother_name ?? '';
+        form.father_name = patient.father_name ?? '';
         form.cellphone = patient.cellphone ?? '';
         form.email = patient.email ?? '';
         form.occupation = patient.occupation ?? '';

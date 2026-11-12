@@ -6,11 +6,12 @@ export interface Patient {
   id: number;
   name: string;
   social_name?: string;
-  cpf: string;
+  cpf?: string;
   cns?: string;
   birthDate: string;
   gender: 'M' | 'F' | 'I';
   mother_name: string;
+  father_name?: string;
   cellphone: string;
   email?: string;
   postal_code?: string;
@@ -30,11 +31,12 @@ export interface CreatePatientDto {
   client_id?: number;
   name: string;
   social_name?: string;
-  cpf: string;
+  cpf?: string;
   cns?: string;
   birthDate: string;
   gender: 'M' | 'F' | 'I';
   mother_name: string;
+  father_name?: string;
   cellphone: string;
   email?: string;
   postal_code?: string;
